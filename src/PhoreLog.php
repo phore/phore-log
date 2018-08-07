@@ -46,6 +46,10 @@ class PhoreLog
         return $this;
     }
 
+    public function getVerbosity() : int
+    {
+        return $this->verbosity;
+    }
 
     public function debug(...$params) : self
     {
