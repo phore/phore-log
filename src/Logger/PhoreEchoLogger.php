@@ -35,7 +35,7 @@ class PhoreEchoLogger implements PhoreLogger
         $logLine .= "[+" . number_format(PhoreStopWatch::GetScriptRunTime(), 2) . "]";
         $logLine .= "[:$lineNo]";
         $logLine .= " " . implode(" ", $params);
-        echo $logLine;
+        echo $logLine ."\n";
     }
 
 }
