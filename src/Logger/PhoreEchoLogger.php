@@ -32,7 +32,7 @@ class PhoreEchoLogger implements PhoreLogger
 
 
         $logLine = "[{$severityMap[$severity]}]";
-        $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ""), 7, " ", STR_PAD_LEFT) . "]";
+        $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ".", ""), 7, " ", STR_PAD_LEFT) . "]";
         $logLine .= "[:" . str_pad($lineNo, 3, " ", STR_PAD_LEFT) . "]";
         $logLine .= " " . implode(" ", $params);
         echo $logLine ."\n";
