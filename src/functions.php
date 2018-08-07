@@ -11,7 +11,7 @@
 
 
 
-public function phore_log (...$params) : \Phore\Log\PhoreLog
+function phore_log (...$params) : \Phore\Log\PhoreLog
 {
     $logger = \Phore\Log\PhoreLog::GetInstance();
 
