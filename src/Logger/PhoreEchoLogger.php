@@ -20,9 +20,9 @@ class PhoreEchoLogger implements PhoreLogger
     {
         $severityMap = [
             0 => "DEBUG",
-            1 => "INFO",
-            2 => "WARN",
-            3 => "ERR"
+            1 => "INFO ",
+            2 => "WARN ",
+            3 => " ERR "
         ];
 
         if ($this->lastFile !== $file) {
@@ -32,8 +32,8 @@ class PhoreEchoLogger implements PhoreLogger
 
 
         $logLine = "[{$severityMap[$severity]}]";
-        $logLine .= "[+" . number_format(PhoreStopWatch::GetScriptRunTime(), 2) . "]";
-        $logLine .= "[:$lineNo]";
+        $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ""), 7, " ", STR_PAD_LEFT) . "]";
+        $logLine .= "[:" . str_pad($lineNo, 3, " ", STR_PAD_LEFT) . "]";
         $logLine .= " " . implode(" ", $params);
         echo $logLine ."\n";
     }
