@@ -12,6 +12,25 @@ namespace Phore\Log;
 class PhoreStopWatch
 {
 
+    
+    
+    private $startTime;
+    
+    public function __construct()
+    {
+        $this->startTime = microtime(true);
+    }
+    
+    public function getTime()
+    {
+        return (microtime(true) - $this->startTime);
+    }
+    
+    public function reset() 
+    {
+        $this->startTime = microtime(true);
+    }
+
 
     private static $scriptStartTime;
 
