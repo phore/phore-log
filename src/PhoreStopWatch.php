@@ -26,6 +26,11 @@ class PhoreStopWatch
         return (microtime(true) - $this->startTime);
     }
     
+    public function printTime(string $msg="")
+    {
+        return $msg . number_format($this->getTime(), "3", ".", "") . "[sec]";
+    }
+    
     public function reset() 
     {
         $this->startTime = microtime(true);
