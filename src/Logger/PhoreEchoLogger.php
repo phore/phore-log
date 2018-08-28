@@ -19,10 +19,10 @@ class PhoreEchoLogger implements PhoreLogger
     public function log (int $severity, string $file, int $lineNo, ...$params)
     {
         $severityMap = [
-            0 => "DEBUG",
-            1 => "INFO ",
+            9 => "DEBUG",
+            5 => "INFO ",
             2 => "WARN ",
-            3 => " ERR "
+            1 => " ERR "
         ];
 
         if ($this->lastFile !== $file) {

@@ -17,10 +17,10 @@ class PhoreLog
 
     private static $startTime;
 
-    const LOG_DEBUG = 0;
-    const LOG_INFO = 1;
+    const LOG_DEBUG = 9;
+    const LOG_INFO = 5;
     const LOG_WARN = 2;
-    const LOG_ERR = 3;
+    const LOG_ERR = 1;
 
 
     public $logger;
@@ -53,7 +53,7 @@ class PhoreLog
 
     public function debug(...$params) : self
     {
-        if ($this->verbosity > self::LOG_DEBUG)
+        if ($this->verbosity < self::LOG_DEBUG)
             return $this;
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
         $this->log(self::LOG_DEBUG, $bt[0]["file"], $bt[0]["line"], ...$params);
@@ -62,7 +62,7 @@ class PhoreLog
 
     public function info(...$params) : self
     {
-        if ($this->verbosity > self::LOG_INFO)
+        if ($this->verbosity < self::LOG_INFO)
             return $this;
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
         $this->log(self::LOG_INFO, $bt[0]["file"], $bt[0]["line"], ...$params);
@@ -71,7 +71,7 @@ class PhoreLog
 
     public function warn(...$params) : self
     {
-        if ($this->verbosity > self::LOG_WARN)
+        if ($this->verbosity < self::LOG_WARN)
             return $this;
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
         $this->log(self::LOG_WARN, $bt[0]["file"], $bt[0]["line"], ...$params);
@@ -80,7 +80,7 @@ class PhoreLog
 
     public function err(...$params) : self
     {
-        if ($this->verbosity > self::LOG_ERR)
+        if ($this->verbosity < self::LOG_ERR)
             return $this;
         $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
         $this->log(self::LOG_ERR, $bt[0]["file"], $bt[0]["line"], ...$params);
