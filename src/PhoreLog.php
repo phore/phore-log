@@ -19,7 +19,7 @@ class PhoreLog
 
     const LOG_DEBUG = 9;
     const LOG_INFO = 5;
-    const LOG_WARN = 2;
+    const LOG_WARN = 3;
     const LOG_ERR = 1;
 
 
