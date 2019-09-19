@@ -58,7 +58,7 @@ class PhoreCachedLogger implements PhoreLogger
     {
         $out = "";
         foreach ($this->logs as $log) {
-            $out .= $prefix . $log;
+            $out .= "\n" . $prefix . $log;
         }
         return $out;
     }
