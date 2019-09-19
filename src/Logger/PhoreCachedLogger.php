@@ -20,7 +20,6 @@ class PhoreCachedLogger implements PhoreLogger
     
     public function __construct()
     {
-        $this->channel = $logTo;
     }
 
 
