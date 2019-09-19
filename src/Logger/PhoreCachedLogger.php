@@ -35,7 +35,6 @@ class PhoreCachedLogger implements PhoreLogger
         ];
 
         if ($this->lastFile !== $file) {
-            file_put_contents($this->channel,"> $file\n", FILE_APPEND);
             $this->lastFile = $file;
         }
 
