@@ -31,6 +31,11 @@ class PhoreLog
         $this->logger = $logger;
     }
 
+    public function getLogger() : PhoreLogger
+    {
+        
+        return $this->logger;
+    }
 
     public function log (int $severity, string $file, int $lineNo, ...$params) : self
     {
