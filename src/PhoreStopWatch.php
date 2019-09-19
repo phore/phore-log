@@ -16,6 +16,7 @@ class PhoreStopWatch
     
     private $startTime;
     
+    
     public function __construct()
     {
         $this->startTime = microtime(true);
@@ -38,12 +39,22 @@ class PhoreStopWatch
 
 
     private static $scriptStartTime;
+    private static $lastTime;
 
     public static function __Init()
     {
         self::$scriptStartTime = microtime(true);
+        self::$lastTime = self::$scriptStartTime;
     }
 
+    
+    public static function GetElapsedTime() : float 
+    {
+        $elapsed = microtime(true) - self::$lastTime;
+        self::$lastTime = microtime(true);
+        return $elapsed;
+    }
+    
     public static function GetScriptRunTime() : float
     {
         return microtime(true) - self::$scriptStartTime;
