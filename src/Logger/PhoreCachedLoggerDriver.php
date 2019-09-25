@@ -26,11 +26,16 @@ class PhoreCachedLoggerDriver implements PhoreLoggerDriver
     public function log (int $severity, string $file, int $lineNo, ...$params)
     {
         $severityMap = [
-            9 => "DEBUG",
-            5 => "INFO ",
-            3 => "WARN ",
-            2 => " ERR ",
-            1 => "EMGY "
+            0 => "DEBUG",
+            1 => "DEBUG",
+            2 => "INFO ",
+            3 => "INFO ",
+            4 => "WARN ",
+            5 => "WARN ",
+            6 => "WARN ",
+            7 => "WARN ",
+            8 => " ERR ",
+            9 => "EMGY "
         ];
 
         if ($this->lastFile !== $file) {
