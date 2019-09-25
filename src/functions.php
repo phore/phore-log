@@ -11,9 +11,9 @@
 
 
 
-function phore_log ($message=null, array $context = []) : \Phore\Log\PhoreLog
+function phore_log ($message=null, array $context = []) : \Phore\Log\PhoreLogger
 {
-    $logger = \Phore\Log\PhoreLog::GetInstance();
+    $logger = \Phore\Log\PhoreLogger::GetInstance();
     if ($message !== null)
         $logger->_log(\Psr\Log\LogLevel::DEBUG, $message, $context);
     return $logger;

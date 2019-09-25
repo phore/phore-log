@@ -15,7 +15,7 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
-class PhoreLog extends AbstractLogger
+class PhoreLogger extends AbstractLogger
 {
 
     private static $startTime;
@@ -42,8 +42,12 @@ class PhoreLog extends AbstractLogger
 
     public function getLogger() : PhoreLogger
     {
-        
         return $this->logger;
+    }
+
+    public function setLogger(PhoreLogger $logger)
+    {
+
     }
 
 
