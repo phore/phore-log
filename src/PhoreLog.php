@@ -9,8 +9,8 @@
 namespace Phore\Log;
 
 
-use Phore\Log\Logger\PhoreLogger;
-use Phore\Log\Logger\PhoreNullLogger;
+use Phore\Log\Logger\PhoreLoggerDriver;
+use Phore\Log\Logger\PhoreNullLoggerDriver;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -35,12 +35,12 @@ class PhoreLog extends AbstractLogger
     public $logger;
     public $verbosity = LogLevel::DEBUG;
 
-    public function __construct(PhoreLogger $logger)
+    public function __construct(PhoreLoggerDriver $logger)
     {
         $this->logger = $logger;
     }
 
-    public function getLogger() : PhoreLogger
+    public function getLogger() : PhoreLoggerDriver
     {
         
         return $this->logger;
@@ -62,7 +62,7 @@ class PhoreLog extends AbstractLogger
 
     private static $instance = null;
 
-    public static function Init(PhoreLogger $logger)
+    public static function Init(PhoreLoggerDriver $logger)
     {
         self::$instance = new self($logger);
     }
@@ -70,7 +70,7 @@ class PhoreLog extends AbstractLogger
     public static function GetInstance()
     {
         if (self::$instance === null)
-            self::$instance = new self(new PhoreNullLogger());
+            self::$instance = new self(new PhoreNullLoggerDriver());
         return self::$instance;
     }
 

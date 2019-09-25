@@ -11,15 +11,16 @@ namespace Phore\Log\Logger;
 
 use Phore\Log\PhoreStopWatch;
 
-class PhoreCachedLogger implements PhoreLogger
+class PhoreEchoLoggerDriver implements PhoreLoggerDriver
 {
 
     private $lastFile = null;
 
-    private $logs = [];
+    private $channel;
     
-    public function __construct()
+    public function __construct($logTo="php://stderr")
     {
+        $this->channel = $logTo;
     }
 
 
@@ -34,35 +35,16 @@ class PhoreCachedLogger implements PhoreLogger
         ];
 
         if ($this->lastFile !== $file) {
+            file_put_contents($this->channel,"> $file\n", FILE_APPEND);
             $this->lastFile = $file;
         }
 
 
         $logLine = "[{$severityMap[$severity]}]";
-        $logLine .= "[" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ".", ""), 7, " ", STR_PAD_LEFT);
-        $logLine .= " +" . number_format(PhoreStopWatch::GetElapsedTime(), 3, ".", "") .  "s]";
-
+        $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ".", ""), 7, " ", STR_PAD_LEFT) . "]";
         $logLine .= "[:" . str_pad($lineNo, 3, " ", STR_PAD_LEFT) . "]";
         $logLine .= " " . implode(" ", $params);
-        $this->logs[] = $logLine;
+        file_put_contents($this->channel, $logLine ."\n", FILE_APPEND);
     }
 
-    /**
-     * @return string[]
-     */
-    public function getLogs() : array 
-    {
-        return $this->logs;
-    }
-    
-    
-    public function getLogsAsString($prefix="# ") : string 
-    {
-        $out = "";
-        foreach ($this->logs as $log) {
-            $out .= "\n" . $prefix . $log;
-        }
-        return $out;
-    }
-    
 }

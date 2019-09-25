@@ -9,7 +9,7 @@
 namespace Phore\Log\Logger;
 
 
-class PhoreNullLogger implements PhoreLogger
+class PhoreNullLoggerDriver implements PhoreLoggerDriver
 {
 
     public function log(int $severity, string $file, int $lineNo, ...$params)
