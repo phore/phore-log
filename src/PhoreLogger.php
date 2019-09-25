@@ -37,11 +37,12 @@ class PhoreLogger extends AbstractLogger
      * @var PhoreLoggerDriver
      */
     public $driver;
-    public $verbosity = LogLevel::DEBUG;
+    public $verbosity = 0;
 
     public function __construct(PhoreLoggerDriver $driver)
     {
         $this->driver = $driver;
+        $this->setLogLevel(LogLevel::DEBUG); //Default: Highest log level
     }
 
     public function getDriver() : PhoreLoggerDriver
