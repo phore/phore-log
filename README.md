@@ -1,4 +1,4 @@
-# Phore log
+# Phore log :: PSR-3 compatible logger
 
 ##
 

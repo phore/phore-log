@@ -11,13 +11,10 @@
 
 
 
-function phore_log (...$params) : \Phore\Log\PhoreLog
+function phore_log ($message=null, array $context = []) : \Phore\Log\PhoreLog
 {
     $logger = \Phore\Log\PhoreLog::GetInstance();
-
-    if (count($params) > 0 && $logger->getVerbosity() >= \Phore\Log\PhoreLog::LOG_DEBUG) {
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
-        $logger->log(\Phore\Log\PhoreLog::LOG_DEBUG, $backtrace[0]["file"], $backtrace[0]["line"], ...$params);
-    }
+    if ($message !== null)
+        $logger->_log(\Psr\Log\LogLevel::DEBUG, $message, $context);
     return $logger;
 }

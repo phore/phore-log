@@ -11,20 +11,29 @@ namespace Phore\Log;
 
 use Phore\Log\Logger\PhoreLogger;
 use Phore\Log\Logger\PhoreNullLogger;
+use Psr\Log\AbstractLogger;
+use Psr\Log\LoggerInterface;
+use Psr\Log\LogLevel;
 
-class PhoreLog
+class PhoreLog extends AbstractLogger
 {
 
     private static $startTime;
 
-    const LOG_DEBUG = 9;
-    const LOG_INFO = 5;
-    const LOG_WARN = 3;
-    const LOG_ERR = 1;
+    const VERBOSITY_MAP = [
+        LogLevel::EMERGENCY => 9,
+        LogLevel::ALERT => 8,
+        LogLevel::CRITICAL => 7,
+        LogLevel::ERROR => 6,
+        LogLevel::WARNING => 5,
+        LogLevel::NOTICE => 4,
+        LogLevel::INFO => 2,
+        LogLevel::DEBUG => 0
+    ];
 
 
     public $logger;
-    public $verbosity = self::LOG_DEBUG;
+    public $verbosity = LogLevel::DEBUG;
 
     public function __construct(PhoreLogger $logger)
     {
@@ -32,12 +41,7 @@ class PhoreLog
     }
 
 
-    public function log (int $severity, string $file, int $lineNo, ...$params) : self
-    {
 
-        $this->logger->log($severity, $file, $lineNo, ...$params);
-        return $this;
-    }
 
 
     public function setVerbosity(int $verbosity) : self
@@ -51,43 +55,6 @@ class PhoreLog
         return $this->verbosity;
     }
 
-    public function debug(...$params) : self
-    {
-        if ($this->verbosity < self::LOG_DEBUG)
-            return $this;
-        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
-        $this->log(self::LOG_DEBUG, $bt[0]["file"], $bt[0]["line"], ...$params);
-        return $this;
-    }
-
-    public function info(...$params) : self
-    {
-        if ($this->verbosity < self::LOG_INFO)
-            return $this;
-        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
-        $this->log(self::LOG_INFO, $bt[0]["file"], $bt[0]["line"], ...$params);
-        return $this;
-    }
-
-    public function warn(...$params) : self
-    {
-        if ($this->verbosity < self::LOG_WARN)
-            return $this;
-        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
-        $this->log(self::LOG_WARN, $bt[0]["file"], $bt[0]["line"], ...$params);
-        return $this;
-    }
-
-    public function err(...$params) : self
-    {
-        if ($this->verbosity < self::LOG_ERR)
-            return $this;
-        $bt = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 1);
-        $this->log(self::LOG_ERR, $bt[0]["file"], $bt[0]["line"], ...$params);
-        return $this;
-    }
-
-
     private static $instance = null;
 
     public static function Init(PhoreLogger $logger)
@@ -100,6 +67,152 @@ class PhoreLog
         if (self::$instance === null)
             self::$instance = new self(new PhoreNullLogger());
         return self::$instance;
+    }
+
+
+    public function _log(string $severity, $message, array $context, int $btIndex=1)
+    {
+        if ( ! isset (self::VERBOSITY_MAP[$severity]))
+            throw new \InvalidArgumentException("Invalid log-level '$severity'");
+
+        if ($this->verbosity < self::VERBOSITY_MAP[$severity])
+            return;
+
+        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
+        $message = phore_escape($message, $context, function ($in) { return $in; });
+
+        $this->logger->log(self::VERBOSITY_MAP[$severity], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
+    }
+
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param mixed $level
+     * @param string $message
+     * @param array $context
+     *
+     * @return void
+     */
+    public function log($level, $message, array $context = array())
+    {
+        $this->_log($level, $message, $context);
+    }
+
+
+    /**
+     * System is unusable.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function emergency($message, array $context = array())
+    {
+        $this->_log(LogLevel::EMERGENCY, $message, $context);
+    }
+
+    /**
+     * Action must be taken immediately.
+     *
+     * Example: Entire website down, database unavailable, etc. This should
+     * trigger the SMS alerts and wake you up.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function alert($message, array $context = array())
+    {
+        $this->_log(LogLevel::ALERT, $message, $context);
+    }
+
+    /**
+     * Critical conditions.
+     *
+     * Example: Application component unavailable, unexpected exception.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function critical($message, array $context = array())
+    {
+        $this->_log(LogLevel::CRITICAL, $message, $context);
+    }
+
+    /**
+     * Runtime errors that do not require immediate action but should typically
+     * be logged and monitored.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function error($message, array $context = array())
+    {
+        $this->_log(LogLevel::ERROR, $message, $context);
+    }
+
+    /**
+     * Exceptional occurrences that are not errors.
+     *
+     * Example: Use of deprecated APIs, poor use of an API, undesirable things
+     * that are not necessarily wrong.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function warning($message, array $context = array())
+    {
+        $this->_log(LogLevel::WARNING, $message, $context);
+    }
+
+    /**
+     * Normal but significant events.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function notice($message, array $context = array())
+    {
+        $this->_log(LogLevel::NOTICE, $message, $context);
+    }
+
+    /**
+     * Interesting events.
+     *
+     * Example: User logs in, SQL logs.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function info($message, array $context = array())
+    {
+        $this->_log(LogLevel::INFO, $message, $context);
+    }
+
+    /**
+     * Detailed debug information.
+     *
+     * @param string $message
+     * @param array  $context
+     *
+     * @return void
+     */
+    public function debug($message, array $context = array())
+    {
+        $this->_log(LogLevel::DEBUG, $message, $context);
     }
 
 }
