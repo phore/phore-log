@@ -9,6 +9,7 @@
 namespace Phore\Log;
 
 
+use Phore\Log\Logger\PhoreEchoLoggerDriver;
 use Phore\Log\Logger\PhoreLoggerDriver;
 use Phore\Log\Logger\PhoreNullLoggerDriver;
 use Psr\Log\AbstractLogger;
@@ -87,7 +88,7 @@ class PhoreLogger extends AbstractLogger
     public static function GetInstance()
     {
         if (self::$instance === null)
-            self::$instance = new self(new PhoreNullLoggerDriver());
+            self::$instance = new self(new PhoreEchoLoggerDriver()); // Default output to stdout
         return self::$instance;
     }
 
