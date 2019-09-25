@@ -54,6 +54,11 @@ class PhoreLog extends AbstractLogger
     }
 
 
+    /**
+     * @param int $verbosity
+     * @return PhoreLog
+     * @deprecated use setLogLevel() instead
+     */
     public function setVerbosity(int $verbosity) : self
     {
         $this->verbosity = $verbosity;
