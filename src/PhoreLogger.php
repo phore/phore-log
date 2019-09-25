@@ -32,22 +32,25 @@ class PhoreLogger extends AbstractLogger
     ];
 
 
-    public $logger;
+    /**
+     * @var PhoreLoggerDriver
+     */
+    public $driver;
     public $verbosity = LogLevel::DEBUG;
 
-    public function __construct(PhoreLoggerDriver $logger)
+    public function __construct(PhoreLoggerDriver $driver)
     {
-        $this->logger = $logger;
+        $this->driver = $driver;
     }
 
-    public function getLogger() : PhoreLoggerDriver
+    public function getDriver() : PhoreLoggerDriver
     {
-        return $this->logger;
+        return $this->driver;
     }
 
-    public function setLogger(PhoreLogger $logger)
+    public function setDriver(PhoreLoggerDriver $driver)
     {
-
+        $this->driver = $driver;
     }
 
 
@@ -60,7 +63,7 @@ class PhoreLogger extends AbstractLogger
 
     /**
      * @param int $verbosity
-     * @return PhoreLog
+     * @return PhoreLogger
      * @deprecated use setLogLevel() instead
      */
     public function setVerbosity(int $verbosity) : self
@@ -100,7 +103,7 @@ class PhoreLogger extends AbstractLogger
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
         $message = phore_escape($message, $context, function ($in) { return $in; });
 
-        $this->logger->log(self::VERBOSITY_MAP[$severity], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
+        $this->driver->log(self::VERBOSITY_MAP[$severity], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
     }
 
 
