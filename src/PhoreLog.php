@@ -40,6 +40,11 @@ class PhoreLog extends AbstractLogger
         $this->logger = $logger;
     }
 
+    public function getLogger() : PhoreLogger
+    {
+        
+        return $this->logger;
+    }
 
 
 
