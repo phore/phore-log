@@ -15,7 +15,7 @@ use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
 
-class PhoreLog extends AbstractLogger
+class PhoreLogger extends AbstractLogger
 {
 
     private static $startTime;
@@ -42,13 +42,27 @@ class PhoreLog extends AbstractLogger
 
     public function getLogger() : PhoreLoggerDriver
     {
-        
         return $this->logger;
     }
 
+    public function setLogger(PhoreLogger $logger)
+    {
+
+    }
 
 
+    public function setLogLevel(string $logLevel) : self
+    {
+        $map = self::VERBOSITY_MAP;
+        $this->verbosity = phore_pluck($logLevel, $map, new \InvalidArgumentException("Invalid logLevel $logLevel"));
+    }
 
+
+    /**
+     * @param int $verbosity
+     * @return PhoreLog
+     * @deprecated use setLogLevel() instead
+     */
     public function setVerbosity(int $verbosity) : self
     {
         $this->verbosity = $verbosity;
