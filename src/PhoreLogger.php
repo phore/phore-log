@@ -104,7 +104,7 @@ class PhoreLogger extends AbstractLogger
             return;
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
-        $message = phore_escape($message, $context, function ($in) { return $in; });
+        $message = phore_escape($message, $context, function ($in) { return $in; }, true);
 
         $this->driver->log(self::VERBOSITY_MAP[$severity], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
     }
