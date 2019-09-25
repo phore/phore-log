@@ -60,6 +60,7 @@ class PhoreLogger extends AbstractLogger
     {
         $map = self::VERBOSITY_MAP;
         $this->verbosity = phore_pluck($logLevel, $map, new \InvalidArgumentException("Invalid logLevel $logLevel"));
+        return $this;
     }
 
 
