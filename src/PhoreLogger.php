@@ -100,7 +100,7 @@ class PhoreLogger extends AbstractLogger
         if ( ! isset (self::VERBOSITY_MAP[$severity]))
             throw new \InvalidArgumentException("Invalid log-level '$severity'");
 
-        if ($this->verbosity < self::VERBOSITY_MAP[$severity])
+        if ($this->verbosity > self::VERBOSITY_MAP[$severity])
             return;
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
