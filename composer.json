@@ -2,7 +2,7 @@
   "name": "phore/log",
   "description": "Logging class",
   "keywords": ["Keyword1", "Keyword2"],
-  "homepage": "http://infracamp.org/project/phore",
+  "homepage": "https://infracamp.org/project/phore",
   "license": "MIT",
   "authors": [
     { "name": "Matthias Leuffen", "email": "m@tth.es" }
