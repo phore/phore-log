@@ -50,9 +50,10 @@ class PhoreLogger extends AbstractLogger
         return $this->driver;
     }
 
-    public function setDriver(PhoreLoggerDriver $driver)
+    public function setDriver(PhoreLoggerDriver $driver) : self
     {
         $this->driver = $driver;
+        return $this;
     }
 
 
