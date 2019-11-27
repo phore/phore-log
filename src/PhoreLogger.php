@@ -21,65 +21,78 @@ class PhoreLogger extends AbstractLogger
 
     private static $startTime;
 
-    const VERBOSITY_MAP = [
-        LogLevel::EMERGENCY => 9,
-        LogLevel::ALERT => 8,
-        LogLevel::CRITICAL => 7,
-        LogLevel::ERROR => 6,
-        LogLevel::WARNING => 5,
-        LogLevel::NOTICE => 4,
-        LogLevel::INFO => 2,
-        LogLevel::DEBUG => 0
+    const SEVERITY_MAP = [
+        LogLevel::EMERGENCY => 0,
+        LogLevel::ALERT => 1,
+        LogLevel::CRITICAL => 2,
+        LogLevel::ERROR => 3,
+        LogLevel::WARNING => 4,
+        LogLevel::NOTICE => 5,
+        LogLevel::INFO => 6,
+        LogLevel::DEBUG => 7
     ];
 
+    const LOG_LEVEL_MAP = [
+        0 => LogLevel::EMERGENCY,
+        1 => LogLevel::ALERT,
+        2 => LogLevel::CRITICAL,
+        3 => LogLevel::ERROR,
+        4 => LogLevel::WARNING,
+        5 => LogLevel::NOTICE,
+        6 => LogLevel::INFO,
+        7 => LogLevel::DEBUG
+    ];
 
     /**
      * @var PhoreLoggerDriver
      */
-    public $driver;
-    public $verbosity = 0;
+    private $drivers = [];
+
+    private $minSeverity = 7;
 
     public function __construct(PhoreLoggerDriver $driver)
     {
-        $this->driver = $driver;
+        $this->drivers = [$driver];
         $this->setLogLevel(LogLevel::DEBUG); //Default: Highest log level
     }
 
-    public function getDriver() : PhoreLoggerDriver
+    /**
+     * @return PhoreLoggerDriver[]
+     */
+    public function getDrivers() : array
     {
-        return $this->driver;
+        return $this->drivers;
     }
 
-    public function setDriver(PhoreLoggerDriver $driver) : self
+    public function getDriver(string $className) : PhoreLoggerDriver
     {
-        $this->driver = $driver;
+        foreach ($this->drivers as $curDriver) {
+            if ($curDriver instanceof $className)
+                return $curDriver;
+        }
+        throw new \InvalidArgumentException("No driver class '$className' registred.");
+    }
+
+    public function setDrivers(PhoreLoggerDriver $drivers) : self
+    {
+        $this->drivers = [$drivers];
+        return $this;
+    }
+
+    public function addDriver(PhoreLoggerDriver $driver) : self
+    {
+        $this->drivers[] = $driver;
         return $this;
     }
 
 
     public function setLogLevel(string $logLevel) : self
     {
-        $map = self::VERBOSITY_MAP;
-        $this->verbosity = phore_pluck($logLevel, $map, new \InvalidArgumentException("Invalid logLevel $logLevel"));
+        $map = self::SEVERITY_MAP;
+        $this->minSeverity = phore_pluck($logLevel, $map, new \InvalidArgumentException("Invalid logLevel $logLevel"));
         return $this;
     }
 
-
-    /**
-     * @param int $verbosity
-     * @return PhoreLogger
-     * @deprecated use setLogLevel() instead
-     */
-    public function setVerbosity(int $verbosity) : self
-    {
-        $this->verbosity = $verbosity;
-        return $this;
-    }
-
-    public function getVerbosity() : int
-    {
-        return $this->verbosity;
-    }
 
     private static $instance = null;
 
@@ -96,18 +109,19 @@ class PhoreLogger extends AbstractLogger
     }
 
 
-    public function _log(string $severity, $message, array $context, int $btIndex=1)
+    public function _log(string $logLevel, $message, array $context, int $btIndex=1)
     {
-        if ( ! isset (self::VERBOSITY_MAP[$severity]))
-            throw new \InvalidArgumentException("Invalid log-level '$severity'");
+        if ( ! isset (self::SEVERITY_MAP[$logLevel]))
+            throw new \InvalidArgumentException("Invalid log-level '$logLevel'");
 
-        if ($this->verbosity > self::VERBOSITY_MAP[$severity])
+        if ($this->minSeverity < self::SEVERITY_MAP[$logLevel])
             return;
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
         $message = phore_escape($message, $context, function ($in) { return $in; }, true);
 
-        $this->driver->log(self::VERBOSITY_MAP[$severity], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
+        foreach ($this->drivers as $driver)
+            $driver->log(self::SEVERITY_MAP[$logLevel], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
     }
 
 

@@ -9,6 +9,7 @@
 namespace Phore\Log\Logger;
 
 
+use Phore\Log\PhoreLogger;
 use Phore\Log\PhoreStopWatch;
 
 class PhoreEchoLoggerDriver implements PhoreLoggerDriver
@@ -26,26 +27,13 @@ class PhoreEchoLoggerDriver implements PhoreLoggerDriver
 
     public function log (int $severity, string $file, int $lineNo, ...$params)
     {
-        $severityMap = [
-            0 => "DEBUG",
-            1 => "DEBUG",
-            2 => "INFO ",
-            3 => "INFO ",
-            4 => "WARN ",
-            5 => "WARN ",
-            6 => "WARN ",
-            7 => "WARN ",
-            8 => " ERR ",
-            9 => "EMGY "
-        ];
-
         if ($this->lastFile !== $file) {
             file_put_contents($this->channel,"> $file\n", FILE_APPEND);
             $this->lastFile = $file;
         }
 
 
-        $logLine = "[{$severityMap[$severity]}]";
+        $logLine = "[" . PhoreLogger::LOG_LEVEL_MAP[$severity] . "]";
         $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ".", ""), 7, " ", STR_PAD_LEFT) . "]";
         $logLine .= "[:" . str_pad($lineNo, 3, " ", STR_PAD_LEFT) . "]";
         $logLine .= " " . implode(" ", $params);
