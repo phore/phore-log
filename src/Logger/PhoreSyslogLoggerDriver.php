@@ -60,7 +60,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
 
         $this->facility = (int)$url->getQueryVal("facility", 2);
         $this->syslogPort = (int)$url->port;
-        $this->tag = $url->getQueryVal("tag", new \InvalidArgumentException("Tag must be specified in syslog configuration."));
+        $this->tag = $url->getQueryVal("tag", "unnamed");
         $this->syslogType = strtoupper($url->getQueryVal("type", "RFC3164"));
     }
 
