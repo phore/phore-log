@@ -64,13 +64,13 @@ class PhoreLogger extends AbstractLogger
         return $this->drivers;
     }
 
-    public function getDriver(string $className) : PhoreLoggerDriver
+    public function getDriver(string $className) : ?PhoreLoggerDriver
     {
         foreach ($this->drivers as $curDriver) {
             if ($curDriver instanceof $className)
                 return $curDriver;
         }
-        throw new \InvalidArgumentException("No driver class '$className' registred.");
+        return null;
     }
 
     public function setDrivers(PhoreLoggerDriver $drivers) : self
