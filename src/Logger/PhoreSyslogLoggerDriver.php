@@ -91,7 +91,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
             $message = "[" . PhoreLogger::LOG_LEVEL_MAP[$severity] . "] " . implode(" ", $params);
             $syslog_message = "<$pri>{$date} {$host} {$this->tag}: $message";
 
-            $syslog_message = substr($syslog_message,0 ,  1495);
+            $syslog_message = substr($syslog_message,0 ,  1460);
             $this->lastMsg = $syslog_message;
 
             socket_sendto($this->sock, $syslog_message, strlen($syslog_message), 0, $this->syslogHostAddr, $this->syslogPort);
