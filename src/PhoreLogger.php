@@ -96,9 +96,10 @@ class PhoreLogger extends AbstractLogger
 
     private static $instance = null;
 
-    public static function Init(PhoreLoggerDriver $logger)
+    public static function Init(PhoreLoggerDriver $logger) : self
     {
         self::$instance = new self($logger);
+        return self::$instance;
     }
 
     public static function GetInstance()
