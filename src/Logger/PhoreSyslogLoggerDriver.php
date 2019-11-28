@@ -30,6 +30,8 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
 
     protected $minLogLevel;
 
+    public $lastMsg;
+
     /**
      * PhoreSyslogLoggerDriver constructor.
      *
@@ -79,6 +81,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
         if ($severity > PhoreLogger::SEVERITY_MAP[$this->minLogLevel])
             return;
 
+
         if ($this->syslogType === "RFC3164") {
 
             $pri = (int)(($this->facility * 8) + $severity);
@@ -88,7 +91,8 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
             $message = "[" . PhoreLogger::LOG_LEVEL_MAP[$severity] . "] " . implode(" ", $params);
             $syslog_message = "<$pri>{$date} {$host} {$this->tag}: $message";
 
-            $syslog_message = substr($syslog_message,0 ,  1500);
+            $syslog_message = substr($syslog_message,0 ,  1495);
+            $this->lastMsg = $syslog_message;
 
             socket_sendto($this->sock, $syslog_message, strlen($syslog_message), 0, $this->syslogHostAddr, $this->syslogPort);
         }

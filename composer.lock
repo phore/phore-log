@@ -12,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/phore/phore-core.git",
-                "reference": "95cfcc67fd03df866acc3fa5662a5ffe76dc3f24"
+                "reference": "2ea82eded02db9aff3009227da829066aaad485f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phore/phore-core/zipball/95cfcc67fd03df866acc3fa5662a5ffe76dc3f24",
-                "reference": "95cfcc67fd03df866acc3fa5662a5ffe76dc3f24",
+                "url": "https://api.github.com/repos/phore/phore-core/zipball/2ea82eded02db9aff3009227da829066aaad485f",
+                "reference": "2ea82eded02db9aff3009227da829066aaad485f",
                 "shasum": ""
             },
             "require": {
@@ -55,7 +55,7 @@
             ],
             "description": "Phore core library",
             "homepage": "https://infracamp.org/project/phore",
-            "time": "2019-11-27T18:41:28+00:00"
+            "time": "2019-11-27T20:59:11+00:00"
         },
         {
             "name": "psr/log",
@@ -782,12 +782,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "354301b2880de24466a89b6fe8cefd21bee6adaa"
+                "reference": "5b88be431c279005c1fb43a2713b4c14e271ae11"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/354301b2880de24466a89b6fe8cefd21bee6adaa",
-                "reference": "354301b2880de24466a89b6fe8cefd21bee6adaa",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/5b88be431c279005c1fb43a2713b4c14e271ae11",
+                "reference": "5b88be431c279005c1fb43a2713b4c14e271ae11",
                 "shasum": ""
             },
             "require": {
@@ -857,7 +857,7 @@
                 "testing",
                 "xunit"
             ],
-            "time": "2019-11-27T10:02:10+00:00"
+            "time": "2019-11-28T08:13:52+00:00"
         },
         {
             "name": "sebastian/code-unit-reverse-lookup",
