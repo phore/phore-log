@@ -88,7 +88,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
 
             $date = date('M d H:i:s');
             $host = gethostname();
-            $message = "[" . PhoreLogger::LOG_LEVEL_MAP[$severity] . "] " . implode(" ", $params);
+            $message = implode(" ", $params);
             $syslog_message = "<$pri>{$date} {$host} {$this->tag}: $message";
 
             $syslog_message = substr($syslog_message,0 ,  1390); // 1390 works for google MTU
