@@ -9,6 +9,8 @@
 namespace Phore\Log\Logger;
 
 
+use Phore\Log\Format\PhoreDefaultLogFormat;
+use Phore\Log\Format\PhoreLogFormat;
 use Phore\Log\PhoreLogger;
 use Phore\Log\PhoreStopWatch;
 
@@ -18,26 +20,37 @@ class PhoreEchoLoggerDriver implements PhoreLoggerDriver
     private $lastFile = null;
 
     private $channel;
-    
+
+    /**
+     * @var PhoreDefaultLogFormat
+     */
+    private $logFormat;
+
+    private $minSeverity = 7;
+
     public function __construct($logTo="php://stderr")
     {
+        $this->logFormat = new PhoreDefaultLogFormat();
         $this->channel = $logTo;
     }
 
 
     public function log (int $severity, string $file, int $lineNo, ...$params)
     {
-        if ($this->lastFile !== $file) {
-            file_put_contents($this->channel,"> $file\n", FILE_APPEND);
-            $this->lastFile = $file;
-        }
+        if ($severity > $this->minSeverity)
+            return;
 
-
-        $logLine = "[" . PhoreLogger::LOG_LEVEL_MAP[$severity] . "]";
-        $logLine .= "[+" . str_pad(number_format(PhoreStopWatch::GetScriptRunTime(), 3, ".", ""), 7, " ", STR_PAD_LEFT) . "]";
-        $logLine .= "[:" . str_pad($lineNo, 3, " ", STR_PAD_LEFT) . "]";
-        $logLine .= " " . implode(" ", $params);
+        $logLine = $this->logFormat->format($severity, $file, $lineNo, ...$params);
         file_put_contents($this->channel, $logLine ."\n", FILE_APPEND);
     }
 
+    public function setSeverity(int $severity)
+    {
+        $this->minSeverity = $severity;
+    }
+
+    public function setFormatter(PhoreLogFormat $logFormat)
+    {
+        $this->logFormat = $logFormat;
+    }
 }

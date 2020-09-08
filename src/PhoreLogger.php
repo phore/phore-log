@@ -50,9 +50,10 @@ class PhoreLogger extends AbstractLogger
 
     private $minSeverity = 7;
 
-    public function __construct(PhoreLoggerDriver $driver)
+    public function __construct(PhoreLoggerDriver $driver = null)
     {
-        $this->drivers = [$driver];
+        if ($driver !== null)
+            $this->drivers = [$driver];
         $this->setLogLevel(LogLevel::DEBUG); //Default: Highest log level
     }
 
@@ -86,6 +87,16 @@ class PhoreLogger extends AbstractLogger
     }
 
 
+    /**
+     * Set the global limit of what to log. Default is DEBUG - log everything
+     *
+     * You should not use this method but instead configure appropriate logLevels
+     * for the individual drivers
+     *
+     * @param string $logLevel
+     * @return $this
+     * @throws \Exception
+     */
     public function setLogLevel(string $logLevel) : self
     {
         $map = self::SEVERITY_MAP;
@@ -96,10 +107,25 @@ class PhoreLogger extends AbstractLogger
 
     private static $instance = null;
 
+    /**
+     * @deprecated
+     * @param PhoreLoggerDriver $logger
+     * @return static
+     */
     public static function Init(PhoreLoggerDriver $logger) : self
     {
         self::$instance = new self($logger);
         return self::$instance;
+    }
+
+    /**
+     * Register the global logging instance available with phore_log();
+     *
+     * @param PhoreLogger $logger
+     */
+    public static function Register(PhoreLogger $logger)
+    {
+        self::$instance = $logger;
     }
 
     public static function GetInstance()

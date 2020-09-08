@@ -4,16 +4,17 @@
 
 ## Logger Usage
 
+### Configuration
 
+```php
+PhoreLogger::Register(PhoreLoggerFactory::BuildFromUri("syslog+udp://metrics.host.tld:4200?tag=server1"));
+```
 
+### Logging
 ```
 phore_log("something to log :message", ["message"=>"Hello"]);
 
 phore_log()->setLogLevel(LogLevel::DEBUG);
-phore_log()->setDriver(new PhoreCachedLoggerDriver());
-
-
-
 phore_log()->emergency("emergency"); 
 
 ```
@@ -29,7 +30,7 @@ phore_log()->emergency("emergency");
 | LogLevel::WARNING     | 4    |
 | LogLevel::NOTICE      | 5    |
 | LogLevel::INFO        | 6    |
-| LogLevel::DEBUG       | 7    |
+| LogLevel::DEBUG       | 7 (default)   |
 
 
 ### Logging configuration
@@ -37,11 +38,9 @@ phore_log()->emergency("emergency");
 You can specify one or more logger with different log levels.
 
 ```
-udp+syslog://<hostname>:<port>/<tag>?severity=4&
-udp+syslogng://
-file://stderr?severity=4
+syslog+udp://<hostname>:<port>/<tag>?severity=4&
+syslogng+udp://
+stderr://?severity=4
+stdout://?severity=4
+file:///var/log/xy.log?severity=4
 ```
-
-
-
-| Driver

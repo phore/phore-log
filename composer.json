@@ -1,7 +1,7 @@
 {
   "name": "phore/log",
   "description": "Logging class",
-  "keywords": ["Keyword1", "Keyword2"],
+  "keywords": ["logging", "syslog"],
   "homepage": "https://infracamp.org/project/phore",
   "license": "MIT",
   "authors": [

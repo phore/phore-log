@@ -10,6 +10,8 @@ namespace Phore\Log\Logger;
 
 
 use Phore\Core\Exception\InvalidDataException;
+use Phore\Log\Format\PhoreLogFormat;
+use Phore\Log\Format\PhoreSyslogLogFormat;
 use Phore\Log\PhoreLogger;
 use Psr\Log\LogLevel;
 
@@ -18,17 +20,15 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
 
 
     protected $sock;
-
     protected $syslogHostAddr;
     protected $syslogPort;
 
+    protected $minSeverity;
 
-    protected $facility;
-    protected $tag;
-
-    protected $syslogType;
-
-    protected $minLogLevel;
+    /**
+     * @var PhoreLogFormat
+     */
+    protected $logFormat;
 
     public $lastMsg;
 
@@ -58,12 +58,17 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
             $this->syslogHostAddr = null;
         }
 
-        $this->minLogLevel = $minLogLevel;
+        $this->minSeverity = PhoreLogger::SEVERITY_MAP[$minLogLevel];
 
-        $this->facility = (int)$url->getQueryVal("facility", 2);
         $this->syslogPort = (int)$url->port;
-        $this->tag = $url->getQueryVal("tag", "unnamed");
-        $this->syslogType = strtoupper($url->getQueryVal("type", "RFC3164"));
+        $facility = (int)$url->getQueryVal("facility", 2);
+        $tag = $url->getQueryVal("tag", "unnamed");
+        $syslogType = strtoupper($url->getQueryVal("type", "RFC3164"));
+
+        $this->logFormat = new PhoreSyslogLogFormat([
+            "facility" => $facility,
+            "tag" => $tag
+        ]);
     }
 
 
@@ -78,28 +83,25 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
         if ($this->syslogHostAddr === null)
             return;
 
-        if ($severity > PhoreLogger::SEVERITY_MAP[$this->minLogLevel])
+        if ($severity > $this->minSeverity)
             return;
 
-
-        if ($this->syslogType === "RFC3164") {
-
-            $pri = (int)(($this->facility * 8) + $severity);
-
-            $date = date('M d H:i:s');
-            $host = gethostname();
-            $message = implode(" ", $params);
-            $syslog_message = "<$pri>{$date} {$host} {$this->tag}: $message";
-
-            $syslog_message = substr($syslog_message,0 ,  1390); // 1390 works for google MTU
-            $this->lastMsg = $syslog_message;
-
-            socket_sendto($this->sock, $syslog_message, strlen($syslog_message), 0, $this->syslogHostAddr, $this->syslogPort);
-        }
+        $syslog_message = $this->logFormat->format($severity, $file, $lineNo, ...$params);
+        socket_sendto($this->sock, $syslog_message, strlen($syslog_message), 0, $this->syslogHostAddr, $this->syslogPort);
     }
 
     public function __destruct()
     {
         socket_close($this->sock);
+    }
+
+    public function setSeverity(int $severity)
+    {
+        $this->minSeverity = $severity;
+    }
+
+    public function setFormatter(PhoreLogFormat $logFormat)
+    {
+        $this->logFormat = $logFormat;
     }
 }
