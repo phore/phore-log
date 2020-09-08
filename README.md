@@ -2,12 +2,36 @@
 
 [![Actions Status](https://github.com/phore/phore-log/workflows/tests/badge.svg)](https://github.com/phore/phore-log/actions)
 
+- PSR-3 compliant logger
+- Multiple targets (syslog, file, pipe) with individual configuration
+- Quick configuration with single uri
+- Multi-format support
+
+## Installation
+
+```bash
+composer require phore/log
+```
+
 ## Logger Usage
 
-### Configuration
+**Easy usage**
+```php
+phore_Log("Some log message"); // Debug message
+phore_log("Value :val expected", ["val"=>"some unescaped value"]); // Auto escaping
+phore_log()->emergency("Emergency Message");
+```
 
+## Configuration
+
+**Global configuration**
 ```php
 PhoreLogger::Register(PhoreLoggerFactory::BuildFromUri("syslog+udp://metrics.host.tld:4200?tag=server1"));
+```
+
+**Multi instance**
+```
+$logger = PhoreLoggerFactory::BuildFromUri();
 ```
 
 ### Logging
