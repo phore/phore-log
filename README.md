@@ -64,7 +64,7 @@ You can specify one or more logger with different log levels.
 ```
 syslog+udp://<hostname>:<port>/<tag>?severity=4&
 syslogng+udp://
-stderr://?severity=4
-stdout://?severity=4
+def://stdout?severity=4
+def://stderr?severity=4
 file:///var/log/xy.log?severity=4
 ```

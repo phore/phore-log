@@ -32,12 +32,12 @@ class PhoreLoggerFactory
 
             $severity = $parsedDriverUri->getQueryVal("severity", 7); // Default: debug - log everything
             switch ($parsedDriverUri->scheme) {
-                case "stdout":
-                    $curDriver = new PhoreEchoLoggerDriver("php://stdout");
+                case "def":
+                    if ( ! in_array($parsedDriverUri->host, ["stderr", "stdout"]))
+                        throw new \InvalidArgumentException("Driver spec invalid: '$uri'. Expeced format: def://stderr|stdout");
+                    $curDriver = new PhoreEchoLoggerDriver("php://" . $parsedDriverUri->host);
                     break;
-                case "stderr":
-                    $curDriver = new PhoreEchoLoggerDriver("php://stderr");
-                    break;
+
                 case "file":
                     $curDriver = new PhoreEchoLoggerDriver($parsedDriverUri->path);
                     break;
