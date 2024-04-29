@@ -28,14 +28,16 @@ class PhoreHttpJsonSteamLoggerDriver implements PhoreLoggerDriver
             return;
 
         $logLine = $this->logFormat->format($severity, $file, $lineNo, ...$params);
-        echo json_encode([
+        $line = json_encode([
             "type" => "log",
             "severity" => $severity,
                 "file" => $file,
             "lineNo" => $lineNo,
             "message" => $logLine,
                 "context" => $params
-        ]) . PHP_EOL;
+        ]);
+        echo $line . "\r\n";
+        //file_put_contents("php://output", $line . "\r\n");
         flush();
     }
 
