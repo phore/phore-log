@@ -20,7 +20,7 @@ class PhoreHttpJsonSteamLoggerDriver implements PhoreLoggerDriver
 
     public function __construct()
     {
-        $this->logFormat = new PhoreDefaultLogFormat();
+        $this->logFormat = new PhoreDefaultLogFormat(false, false, false);
     }
 
     public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
