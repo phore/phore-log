@@ -6,20 +6,21 @@
  * Time: 08:42
  */
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 use Phore\Log\Format\PhoreLogFormat;
+use Phore\Log\LogLevelEnum;
 
 class PhoreNullLoggerDriver implements PhoreLoggerDriver
 {
 
-    public function log(int $severity, string $file, int $lineNo, ...$params)
+    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
     {
         // Do nothing
     }
 
-    public function setSeverity(int $severity)
+    public function setMinSeverity(LogLevelEnum $logLevel)
     {
         // TODO: Implement setSeverity() method.
     }

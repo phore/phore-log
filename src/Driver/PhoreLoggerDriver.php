@@ -6,16 +6,17 @@
  * Time: 08:39
  */
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 use Phore\Log\Format\PhoreLogFormat;
+use Phore\Log\LogLevelEnum;
 
 interface PhoreLoggerDriver
 {
-    public function log (int $severity, string $file, int $lineNo, ...$params);
+    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = []);
 
-    public function setSeverity(int $severity);
+    public function setMinSeverity(LogLevelEnum $logLevel);
 
     public function setFormatter(PhoreLogFormat $logFormat);
 }

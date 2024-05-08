@@ -6,13 +6,15 @@
  * Time: 08:30
  */
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 use Phore\Log\Format\PhoreDefaultLogFormat;
 use Phore\Log\Format\PhoreLogFormat;
+use Phore\Log\LogLevelEnum;
 use Phore\Log\PhoreLogger;
 use Phore\Log\PhoreStopWatch;
+
 
 class PhoreEchoLoggerDriver implements PhoreLoggerDriver
 {
@@ -35,18 +37,18 @@ class PhoreEchoLoggerDriver implements PhoreLoggerDriver
     }
 
 
-    public function log (int $severity, string $file, int $lineNo, ...$params)
+    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
     {
-        if ($severity > $this->minSeverity)
+        if (phore_loglevel_to_int($logLevel) > $this->minSeverity)
             return;
 
-        $logLine = $this->logFormat->format($severity, $file, $lineNo, ...$params);
+        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, $message, $context);
         file_put_contents($this->channel, $logLine ."\n", FILE_APPEND);
     }
 
-    public function setSeverity(int $severity)
+    public function setSeverity(LogLevelEnum $severity)
     {
-        $this->minSeverity = $severity;
+        $this->minSeverity = phore_loglevel_to_int($severity);
     }
 
     public function setFormatter(PhoreLogFormat $logFormat)

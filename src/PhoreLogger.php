@@ -9,9 +9,9 @@
 namespace Phore\Log;
 
 
-use Phore\Log\Logger\PhoreEchoLoggerDriver;
-use Phore\Log\Logger\PhoreLoggerDriver;
-use Phore\Log\Logger\PhoreNullLoggerDriver;
+
+use Phore\Log\Driver\PhoreEchoLoggerDriver;
+use Phore\Log\Driver\PhoreLoggerDriver;
 use Psr\Log\AbstractLogger;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
@@ -21,27 +21,6 @@ class PhoreLogger extends AbstractLogger
 
     private static $startTime;
 
-    const SEVERITY_MAP = [
-        LogLevel::EMERGENCY => 0,
-        LogLevel::ALERT => 1,
-        LogLevel::CRITICAL => 2,
-        LogLevel::ERROR => 3,
-        LogLevel::WARNING => 4,
-        LogLevel::NOTICE => 5,
-        LogLevel::INFO => 6,
-        LogLevel::DEBUG => 7
-    ];
-
-    const LOG_LEVEL_MAP = [
-        0 => LogLevel::EMERGENCY,
-        1 => LogLevel::ALERT,
-        2 => LogLevel::CRITICAL,
-        3 => LogLevel::ERROR,
-        4 => LogLevel::WARNING,
-        5 => LogLevel::NOTICE,
-        6 => LogLevel::INFO,
-        7 => LogLevel::DEBUG
-    ];
 
     /**
      * @var PhoreLoggerDriver
@@ -54,7 +33,7 @@ class PhoreLogger extends AbstractLogger
     {
         if ($driver !== null)
             $this->drivers = [$driver];
-        $this->setLogLevel(LogLevel::DEBUG); //Default: Highest log level
+        $this->setLogLevel(LogLevelEnum::DEBUG); //Default: Highest log level
     }
 
     /**
@@ -97,10 +76,9 @@ class PhoreLogger extends AbstractLogger
      * @return $this
      * @throws \Exception
      */
-    public function setLogLevel(string $logLevel) : self
+    public function setLogLevel(LogLevelEnum $logLevel) : self
     {
-        $map = self::SEVERITY_MAP;
-        $this->minSeverity = phore_pluck($logLevel, $map, new \InvalidArgumentException("Invalid logLevel $logLevel"));
+        $this->minSeverity = phore_loglevel_to_int($logLevel);
         return $this;
     }
 
@@ -136,19 +114,18 @@ class PhoreLogger extends AbstractLogger
     }
 
 
-    public function _log(string $logLevel, $message, array $context, int $btIndex=1)
+    public function _log(LogLevelEnum $logLevel, $message, array $context, int $btIndex=1)
     {
-        if ( ! isset (self::SEVERITY_MAP[$logLevel]))
-            throw new \InvalidArgumentException("Invalid log-level '$logLevel'");
 
-        if ($this->minSeverity < self::SEVERITY_MAP[$logLevel])
+
+        if ($this->minSeverity < phore_loglevel_to_int($logLevel))
             return;
 
         $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
         $message = phore_escape($message, $context, function ($in) { return $in; }, true);
 
         foreach ($this->drivers as $driver)
-            $driver->log(self::SEVERITY_MAP[$logLevel], $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
+            $driver->log($logLevel, $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
     }
 
 
@@ -177,7 +154,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function emergency($message, array $context = array())
     {
-        $this->_log(LogLevel::EMERGENCY, $message, $context);
+        $this->_log(LogLevelEnum::EMERGENCY, $message, $context);
     }
 
     /**
@@ -193,7 +170,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function alert($message, array $context = array())
     {
-        $this->_log(LogLevel::ALERT, $message, $context);
+        $this->_log(LogLevelEnum::ALERT, $message, $context);
     }
 
     /**
@@ -208,7 +185,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function critical($message, array $context = array())
     {
-        $this->_log(LogLevel::CRITICAL, $message, $context);
+        $this->_log(LogLevelEnum::CRITICAL, $message, $context);
     }
 
     /**
@@ -222,7 +199,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function error($message, array $context = array())
     {
-        $this->_log(LogLevel::ERROR, $message, $context);
+        $this->_log(LogLevelEnum::ERROR, $message, $context);
     }
 
     /**
@@ -238,7 +215,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function warning($message, array $context = array())
     {
-        $this->_log(LogLevel::WARNING, $message, $context);
+        $this->_log(LogLevelEnum::WARNING, $message, $context);
     }
 
     /**
@@ -251,7 +228,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function notice($message, array $context = array())
     {
-        $this->_log(LogLevel::NOTICE, $message, $context);
+        $this->_log(LogLevelEnum::NOTICE, $message, $context);
     }
 
     /**
@@ -266,7 +243,7 @@ class PhoreLogger extends AbstractLogger
      */
     public function info($message, array $context = array())
     {
-        $this->_log(LogLevel::INFO, $message, $context);
+        $this->_log(LogLevelEnum::INFO, $message, $context);
     }
 
     /**
@@ -279,7 +256,12 @@ class PhoreLogger extends AbstractLogger
      */
     public function debug($message, array $context = array())
     {
-        $this->_log(LogLevel::DEBUG, $message, $context);
+        $this->_log(LogLevelEnum::DEBUG, $message, $context);
     }
 
+
+    public function success($message, array $context = array())
+    {
+        $this->_log(LogLevelEnum::SUCCESS, $message, $context);
+    }
 }

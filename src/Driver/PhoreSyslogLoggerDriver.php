@@ -6,12 +6,13 @@
  * Time: 19:29
  */
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 use Phore\Core\Exception\InvalidDataException;
 use Phore\Log\Format\PhoreLogFormat;
 use Phore\Log\Format\PhoreSyslogLogFormat;
+use Phore\Log\LogLevelEnum;
 use Phore\Log\PhoreLogger;
 use Psr\Log\LogLevel;
 
@@ -45,7 +46,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
      * @param string $syslogConn
      * @param string $tag
      */
-    public function __construct(string $syslogConn, string $minLogLevel = LogLevel::DEBUG)
+    public function __construct(string $syslogConn, LogLevelEnum $minLogLevel = LogLevelEnum::DEBUG)
     {
         $this->sock = socket_create(AF_INET, SOCK_DGRAM, SOL_UDP);
 
@@ -58,7 +59,7 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
             $this->syslogHostAddr = null;
         }
 
-        $this->minSeverity = PhoreLogger::SEVERITY_MAP[$minLogLevel];
+        $this->minSeverity = phore_loglevel_to_int($minLogLevel);
 
         $this->syslogPort = (int)$url->port;
         $facility = (int)$url->getQueryVal("facility", 2);
@@ -78,15 +79,15 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
     }
 
 
-    public function log(int $severity, string $file, int $lineNo, ...$params)
+    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
     {
         if ($this->syslogHostAddr === null)
             return;
 
-        if ($severity > $this->minSeverity)
+        if ($logLevel > $this->minSeverity)
             return;
 
-        $syslog_message = $this->logFormat->format($severity, $file, $lineNo, ...$params);
+        $syslog_message = $this->logFormat->format($logLevel, $file, $lineNo, ...$params);
         socket_sendto($this->sock, $syslog_message, strlen($syslog_message), 0, $this->syslogHostAddr, $this->syslogPort);
     }
 
@@ -95,9 +96,9 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
         socket_close($this->sock);
     }
 
-    public function setSeverity(int $severity)
+    public function setMinSeverity(LogLevelEnum $logLevel)
     {
-        $this->minSeverity = $severity;
+        $this->minSeverity = phore_loglevel_to_int($logLevel);
     }
 
     public function setFormatter(PhoreLogFormat $logFormat)

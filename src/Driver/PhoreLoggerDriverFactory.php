@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 class PhoreLoggerDriverFactory

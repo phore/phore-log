@@ -6,7 +6,7 @@
  * Time: 08:30
  */
 
-namespace Phore\Log\Logger;
+namespace Phore\Log\Driver;
 
 
 use Phore\Log\Format\PhoreDefaultLogFormat;
@@ -29,7 +29,7 @@ class PhoreCachedLoggerDriver implements PhoreLoggerDriver
     }
 
 
-    public function log (int $severity, string $file, int $lineNo, ...$params)
+    public function log (int $logLevel, string $file, int $lineNo, ...$params)
     {
 
         if ($this->lastFile !== $file) {
@@ -37,7 +37,7 @@ class PhoreCachedLoggerDriver implements PhoreLoggerDriver
         }
 
 
-        $logLine = $this->logFormat->format($severity, $file, $lineNo, ...$params);
+        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, ...$params);
         $this->logs[] = $logLine;
     }
 
