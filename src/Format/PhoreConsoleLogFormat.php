@@ -93,7 +93,7 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
             if (in_array((string)$key, $usedKeys, true)) {
                 continue;
             }
-            $formatted = $this->stringValue($value);
+            $formatted = $this->displayValue($value);
             if (str_contains($formatted, "\n")) {
                 continue;
             }
@@ -102,11 +102,13 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
         return $parts === [] ? '' : '  ' . implode(' ', $parts);
     }
 
-    private function stringValue(mixed $value): string
+    private function displayValue(mixed $value): string
     {
         if ($value === null) return 'null';
         if (is_bool($value)) return $value ? 'true' : 'false';
-        if (is_scalar($value) || $value instanceof \Stringable) return (string)$value;
+        if (is_string($value)) return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], $value) . "'";
+        if (is_int($value) || is_float($value)) return (string)$value;
+        if ($value instanceof \Stringable) return "'" . str_replace(['\\', "'"], ['\\\\', "\\'"], (string)$value) . "'";
         return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: get_debug_type($value);
     }
 }

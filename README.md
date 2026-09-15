@@ -30,13 +30,19 @@ $log->info('User {} scored {:dec=2}', [42, 0.87654]);
 $log->debug('Request finished in {:ms|dec=1}', [0.03245]);
 ```
 
+Pass typed values directly to the logger. Do not pre-format booleans or nulls into strings such as `$flag ? 'true' : 'false'` or `$value ?? 'null'`. The logger renders booleans as `true` / `false`, `null` as `null`, normal strings in single quotes, and an empty string as `''`.
+
+```php
+$log->debug('enabled={} missing={} label={} empty={}', [true, null, 'ready', '']);
+```
+
+This renders the values unambiguously as `true`, `null`, `'ready'` and `''`.
+
 Numeric and named context can be mixed. Numeric entries are consumed only by positional placeholders, while named entries can be referenced explicitly and unused named entries remain structured context:
 
 ```php
 $log->debug('Imported {} records for {tenant}', [17, 'tenant' => 'acme', 'source' => 'csv']);
 ```
-
-The console renders `Imported 17 records for acme  source=csv`.
 
 Named context values remain useful when the field name itself is important:
 
@@ -69,7 +75,7 @@ Placeholder filters are written after a colon and can be combined with `|`:
 
 Long values are shortened automatically in console/default output. More than 5 lines or 240 characters are compacted while retaining both the beginning and end, with the omitted amount shown as `… +N lines …` or `… +N chars …`. The structured context remains complete.
 
-For file placeholders, strings are written unchanged, arrays are written as pretty multiline JSON, and objects are written with PHP `serialize()`. `{:json|file}` forces pretty JSON and `{:serialize|file}` forces serialized output. Files are named sequentially as `phore-log-000001.txt`, `phore-log-000002.txt`, and so on in the system temp directory. On the first file write of a new PHP process, leftover `phore-log-*.txt` files from the previous run are removed.
+For file placeholders, strings are written unchanged and unescaped, arrays are written as pretty multiline JSON, and objects are written with PHP `serialize()`. `{:json|file}` forces pretty JSON and `{:serialize|file}` forces serialized output. Files are named sequentially as `phore-log-000001.txt`, `phore-log-000002.txt`, and so on in the system temp directory. On the first file write of a new PHP process, leftover `phore-log-*.txt` files from the previous run are removed.
 
 Literal braces can be escaped with `{{` and `}}`.
 
