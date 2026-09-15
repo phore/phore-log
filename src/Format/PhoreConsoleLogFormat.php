@@ -25,7 +25,7 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
         }
         $indent = str_repeat('  ', $record->depth);
         $message = $record->interpolatedMessage($this->placeholderMaxLines, $this->placeholderMaxChars);
-        $context = $this->formatContext($record->context, $record->usedContextKeys());
+        $context = $this->formatContext($record->displayContext(), $record->usedContextKeys());
         $line = $indent . $scope . $symbol . ' ' . $message . $context;
         return $this->colors ? "\033[{$color}m{$line}\033[0m" : $line;
     }
