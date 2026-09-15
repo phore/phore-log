@@ -98,9 +98,6 @@ final readonly class LogRecord
         if (preg_match('/^([A-Za-z_][A-Za-z0-9_.-]*):(.+)$/', $key, $match)) {
             return [$match[1], $this->parseFilters($match[2])];
         }
-        if (preg_match('/^([A-Za-z_][A-Za-z0-9_.-]*)\|(.+)$/', $key, $match)) {
-            return [$match[1], $this->parseFilters($match[2])];
-        }
         return [$key, []];
     }
 
