@@ -13,4 +13,4 @@ jobs:
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction
       - name: UnitTests
-        run: vendor/bin/phpunit tests
+        run: vendor/bin/ptest tests/
