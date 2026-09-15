@@ -147,4 +147,33 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
             throw new \RuntimeException('Expected pretty multiline JSON in placeholder file');
         }
     }
+
+    function it_serializes_objects_when_written_directly_to_a_file_placeholder(): void
+    {
+        $payload = new \stdClass();
+        $payload->id = 42;
+        $payload->name = 'Alice';
+
+        $record = new LogRecord(
+            microtime(true),
+            LogLevelEnum::DEBUG,
+            LogTypeEnum::DETAIL,
+            'Payload {payload:file}',
+            ['payload' => $payload],
+            '',
+            0,
+            __FILE__,
+            __LINE__
+        );
+
+        $line = (new PhoreConsoleLogFormat(false))->format($record);
+        if (!preg_match('#file://(/[^\s]+)$#', $line, $match)) {
+            throw new \RuntimeException('Expected absolute file URI in console output');
+        }
+
+        $restored = unserialize((string)file_get_contents($match[1]), ['allowed_classes' => [\stdClass::class]]);
+        if (!$restored instanceof \stdClass || $restored->id !== 42 || $restored->name !== 'Alice') {
+            throw new \RuntimeException('Expected serialized object in placeholder file');
+        }
+    }
 }
