@@ -55,7 +55,7 @@ class PhoreLoggerSpec extends ObjectBehavior
 
         $logger->scope('user')->info('Request {requestId}');
 
-        if (!str_contains($driver->getLogs()[0] ?? '', 'Request r-1')) {
+        if (!str_contains($driver->getLogs()[0] ?? '', "Request 'r-1'")) {
             throw new \RuntimeException('Child logger did not inherit context');
         }
     }
@@ -73,7 +73,7 @@ class PhoreLoggerSpec extends ObjectBehavior
         if (!str_contains($logs[0] ?? '', 'Inside 42')) {
             throw new \RuntimeException('Temporary context was not applied inside the callback');
         }
-        if (!str_contains($logs[1] ?? '', 'Outside none')) {
+        if (!str_contains($logs[1] ?? '', "Outside 'none'")) {
             throw new \RuntimeException('Temporary context leaked outside the callback');
         }
     }
