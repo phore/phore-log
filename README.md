@@ -46,6 +46,28 @@ $userLog->success('User {userId} updated');
 
 Context stays structured for non-console drivers and is inherited by child loggers.
 
+For short-lived context, use `inContext()`. The callback receives a child logger and the parent logger is unchanged afterwards:
+
+```php
+$log->inContext(['userId' => 42], function (Phore\Log\PhoreLogger $log): void {
+    $log->scope('user')->step('Load user {userId}');
+    $log->scope('user')->success('User {userId} loaded');
+});
+```
+
+## Failure buffer
+
+A buffered console logger keeps recent log records in memory and stays silent until a configured failure level occurs. The buffered records are then replayed in order, followed by the triggering error. Afterwards the buffer starts a new cycle.
+
+```php
+$trace = Phore\Log\PhoreLogger::bufferedConsole(capacity: 50);
+$trace->debug('Candidate A score {score}', ['score' => 0.71]);
+$trace->step('Select best candidate');
+$trace->error('Model resolution failed');
+```
+
+This is intended as a separate diagnostic logger for exploratory development, so verbose traces do not flood normal console output.
+
 ## Semantic console types
 
 Besides the PSR-3 methods, Phore Log provides `step()`, `success()`, `result()`, `detail()`, `skip()` and `failure()`. These are presentation semantics, not additional severity levels: e.g. `success()` is an INFO record and `detail()` is DEBUG.
@@ -60,4 +82,4 @@ Phore\Log\PhoreLogger::Register(
 
 Supported targets include `def://stderr`, `def://stdout`, `console://stderr`, `file:///path/to/file.log` and `syslog+udp://host:port`.
 
-See `examples/01-console.php`, `examples/02-scoped-modules.php` and `examples/03-injected-child-logger.php` for complete examples.
+See `examples/01-console.php` through `examples/05-failure-buffer.php` for the complete example sequence.
