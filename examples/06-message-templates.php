@@ -10,6 +10,7 @@ $log = new PhoreLogger(new PhoreConsoleLoggerDriver(colors: false));
 $log->info('User {} scored {:dec=2}', [42, 0.87654]);
 $log->debug('Imported {} records for {tenant}', [17, 'tenant' => 'acme', 'source' => 'csv']);
 $log->debug('Request finished in {:ms|dec=1}', [0.03245]);
+$log->debug('enabled={} disabled={} missing={} label={} empty={}', [true, false, null, 'ready', '']);
 
 $payload = "first line\nsecond line\nthird line\nfourth line\nfifth line\nsixth line\nlast line";
 $log->detail("Payload:\n{}", [$payload]);
