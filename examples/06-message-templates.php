@@ -20,3 +20,12 @@ $payload = "first line\nsecond line\nthird line\nfourth line\nfifth line\nsixth 
 $log->detail("Payload:\n{payload}", ['payload' => $payload]);
 $log->detail("Payload without automatic shortening:\n{payload:full}", ['payload' => $payload]);
 $log->detail('Compact token: {token:trim=16}', ['token' => 'abcdefghijklmnopqrstuvwxyz0123456789']);
+
+$log->detail('Payload file: {payload:json|file}', [
+    'payload' => ['user' => ['id' => 42], 'active' => true],
+]);
+
+$object = new stdClass();
+$object->id = 42;
+$object->name = 'Alice';
+$log->detail('Serialized object: {object:file}', ['object' => $object]);
