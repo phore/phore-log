@@ -43,7 +43,7 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
     function it_interpolates_placeholders_without_repeating_used_context(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'User {userId} loaded', ['userId' => 42, 'source' => 'api'], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn('ℹ User 42 loaded  source=api');
+        $this->format($record)->shouldReturn("ℹ User 42 loaded  source='api'");
     }
 
     function it_supports_positional_placeholders_from_numeric_context_values(): void
@@ -55,7 +55,19 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
     function it_mixes_positional_placeholders_with_named_structured_context(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'Imported {} records for {tenant}', [17, 'tenant' => 'acme', 'source' => 'csv'], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn('ℹ Imported 17 records for acme  source=csv');
+        $this->format($record)->shouldReturn("ℹ Imported 17 records for 'acme'  source='csv'");
+    }
+
+    function it_renders_boolean_and_empty_string_values_unambiguously(): void
+    {
+        $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'Enabled {}, disabled {}, empty {}', [true, false, ''], '', 0, __FILE__, __LINE__);
+        $this->format($record)->shouldReturn("ℹ Enabled true, disabled false, empty ''");
+    }
+
+    function it_quotes_and_escapes_string_values(): void
+    {
+        $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'Value {}', ["it's \\safe"], '', 0, __FILE__, __LINE__);
+        $this->format($record)->shouldReturn("ℹ Value 'it\\'s \\\\safe'");
     }
 
     function it_formats_decimal_places_and_milliseconds(): void
@@ -73,25 +85,25 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
     function it_lets_explicit_placeholder_filters_override_context_key_filters(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, '{payload:full}', ['payload:trim=5' => 'abcdefghij'], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn('· abcdefghij');
+        $this->format($record)->shouldReturn("· 'abcdefghij'");
     }
 
     function it_trims_long_multiline_placeholders_with_head_and_tail(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, "Payload:\n{payload}", ['payload' => "line1\nline2\nline3\nline4\nline5\nline6\nline7"], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn("· Payload:\n  line1\n  line2\n  line3\n  … +2 lines …\n  line6\n  line7");
+        $this->format($record)->shouldReturn("· Payload:\n  'line1\n  line2\n  line3\n  … +2 lines …\n  line6\n  line7'");
     }
 
     function it_can_disable_automatic_trimming_per_placeholder(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, '{payload:full}', ['payload' => "line1\nline2\nline3\nline4\nline5\nline6"], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn("· line1\n  line2\n  line3\n  line4\n  line5\n  line6");
+        $this->format($record)->shouldReturn("· 'line1\n  line2\n  line3\n  line4\n  line5\n  line6'");
     }
 
     function it_can_trim_a_placeholder_to_an_explicit_character_budget(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, '{text:trim=10}', ['text' => 'abcdefghijklmnopqrstuvwxyz'], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn('ℹ abcdefg … +16 chars … xyz');
+        $this->format($record)->shouldReturn("ℹ 'abcdef … +18 chars … yz'");
     }
 
     function it_writes_pretty_multiline_json_to_a_file_placeholder(): void
@@ -116,11 +128,12 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
         if (!$restored instanceof \stdClass || $restored->id !== 42 || $restored->name !== 'Alice') throw new \RuntimeException('Expected serialized object in placeholder file');
     }
 
-    function it_writes_a_positional_value_to_a_file_placeholder(): void
+    function it_writes_a_positional_string_to_a_file_without_console_escaping(): void
     {
-        $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, 'Payload {:file}', ["first\nsecond"], '', 0, __FILE__, __LINE__);
+        $payload = "first 'quoted' \\line\nsecond";
+        $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, 'Payload {:file}', [$payload], '', 0, __FILE__, __LINE__);
         $line = (new PhoreConsoleLogFormat(false))->format($record);
         if (!preg_match('#file://(/[^\s]+)$#', $line, $match)) throw new \RuntimeException('Expected absolute file URI in console output');
-        if (file_get_contents($match[1]) !== "first\nsecond") throw new \RuntimeException('Expected complete positional payload in placeholder file');
+        if (file_get_contents($match[1]) !== $payload) throw new \RuntimeException('Expected raw string payload in placeholder file');
     }
 }
