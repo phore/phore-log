@@ -11,7 +11,8 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
     public function __construct(
         private bool $colors = true,
         private int $placeholderMaxLines = 5,
-        private int $placeholderMaxChars = 240
+        private int $placeholderMaxChars = 240,
+        private int $lineWidth = 120
     ) {
     }
 
@@ -24,10 +25,47 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
             $scope = '[' . end($parts) . '] ';
         }
         $indent = str_repeat('  ', $record->depth);
+        $prefix = $indent . $scope . $symbol . ' ';
         $message = $record->interpolatedMessage($this->placeholderMaxLines, $this->placeholderMaxChars);
         $context = $this->formatContext($record->displayContext(), $record->usedContextKeys());
-        $line = $indent . $scope . $symbol . ' ' . $message . $context;
+        $line = $this->formatMultiline($prefix, $message . $context);
         return $this->colors ? "\033[{$color}m{$line}\033[0m" : $line;
+    }
+
+    private function formatMultiline(string $prefix, string $content): string
+    {
+        $prefixWidth = $this->displayWidth($prefix);
+        $continuation = str_repeat(' ', $prefixWidth);
+        $contentWidth = max(20, $this->lineWidth - $prefixWidth);
+        $logicalLines = preg_split('/\R/u', $content) ?: [$content];
+        $output = [];
+        $first = true;
+
+        foreach ($logicalLines as $logicalLine) {
+            $wrappedLines = $this->wrapLine($logicalLine, $contentWidth);
+            foreach ($wrappedLines as $wrappedLine) {
+                $output[] = ($first ? $prefix : $continuation) . $wrappedLine;
+                $first = false;
+            }
+        }
+
+        return implode(PHP_EOL, $output);
+    }
+
+    /** @return string[] */
+    private function wrapLine(string $line, int $width): array
+    {
+        if ($line === '' || $this->displayWidth($line) <= $width) {
+            return [$line];
+        }
+
+        $wrapped = wordwrap($line, $width, "\n", true);
+        return explode("\n", $wrapped);
+    }
+
+    private function displayWidth(string $value): int
+    {
+        return function_exists('mb_strwidth') ? mb_strwidth($value) : strlen($value);
     }
 
     private function appearance(LogRecord $record): array

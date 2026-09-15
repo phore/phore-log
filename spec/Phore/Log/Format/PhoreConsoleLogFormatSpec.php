@@ -26,6 +26,20 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
         $this->format($record)->shouldReturn('    [repository] ✓ User saved  id=42');
     }
 
+    function it_aligns_explicit_multiline_content_to_the_message_column(): void
+    {
+        $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::SUCCESS, "First line\nSecond line", [], 'user.repository', 2, __FILE__, __LINE__);
+        $continuation = str_repeat(' ', 19);
+        $this->format($record)->shouldReturn("    [repository] ✓ First line\n{$continuation}Second line");
+    }
+
+    function it_wraps_long_lines_and_aligns_continuations_to_the_message_column(): void
+    {
+        $this->beConstructedWith(false, 5, 240, 32);
+        $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'This is a long message that should wrap cleanly at the configured console width', [], '', 0, __FILE__, __LINE__);
+        $this->format($record)->shouldReturn("ℹ This is a long message that\n  should wrap cleanly at the\n  configured console width");
+    }
+
     function it_interpolates_placeholders_without_repeating_used_context(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::INFO, LogTypeEnum::MESSAGE, 'User {userId} loaded', ['userId' => 42, 'source' => 'api'], '', 0, __FILE__, __LINE__);
@@ -65,13 +79,13 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
     function it_trims_long_multiline_placeholders_with_head_and_tail(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, "Payload:\n{payload}", ['payload' => "line1\nline2\nline3\nline4\nline5\nline6\nline7"], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn("· Payload:\nline1\nline2\nline3\n… +2 lines …\nline6\nline7");
+        $this->format($record)->shouldReturn("· Payload:\n  line1\n  line2\n  line3\n  … +2 lines …\n  line6\n  line7");
     }
 
     function it_can_disable_automatic_trimming_per_placeholder(): void
     {
         $record = new LogRecord(microtime(true), LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, '{payload:full}', ['payload' => "line1\nline2\nline3\nline4\nline5\nline6"], '', 0, __FILE__, __LINE__);
-        $this->format($record)->shouldReturn("· line1\nline2\nline3\nline4\nline5\nline6");
+        $this->format($record)->shouldReturn("· line1\n  line2\n  line3\n  line4\n  line5\n  line6");
     }
 
     function it_can_trim_a_placeholder_to_an_explicit_character_budget(): void
