@@ -71,6 +71,40 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
         $this->format($record)->shouldReturn('ℹ Score 0.88, duration 32.5 ms');
     }
 
+    function it_uses_filters_declared_on_context_keys(): void
+    {
+        $record = new LogRecord(
+            microtime(true),
+            LogLevelEnum::INFO,
+            LogTypeEnum::MESSAGE,
+            'Duration {duration}',
+            ['duration:ms|dec=1' => 0.03245],
+            '',
+            0,
+            __FILE__,
+            __LINE__
+        );
+
+        $this->format($record)->shouldReturn('ℹ Duration 32.5 ms');
+    }
+
+    function it_lets_explicit_placeholder_filters_override_context_key_filters(): void
+    {
+        $record = new LogRecord(
+            microtime(true),
+            LogLevelEnum::DEBUG,
+            LogTypeEnum::DETAIL,
+            '{payload:full}',
+            ['payload:trim=5' => 'abcdefghij'],
+            '',
+            0,
+            __FILE__,
+            __LINE__
+        );
+
+        $this->format($record)->shouldReturn('· abcdefghij');
+    }
+
     function it_trims_long_multiline_placeholders_with_head_and_tail(): void
     {
         $record = new LogRecord(
@@ -128,8 +162,8 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
             microtime(true),
             LogLevelEnum::DEBUG,
             LogTypeEnum::DETAIL,
-            'Payload {payload:json|file}',
-            ['payload' => ['user' => ['id' => 42], 'active' => true]],
+            'Payload {payload}',
+            ['payload:json|file' => ['user' => ['id' => 42], 'active' => true]],
             '',
             0,
             __FILE__,
@@ -158,8 +192,8 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
             microtime(true),
             LogLevelEnum::DEBUG,
             LogTypeEnum::DETAIL,
-            'Payload {payload:file}',
-            ['payload' => $payload],
+            'Payload {payload}',
+            ['payload:file' => $payload],
             '',
             0,
             __FILE__,
