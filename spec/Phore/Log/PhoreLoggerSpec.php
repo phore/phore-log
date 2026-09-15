@@ -59,4 +59,22 @@ class PhoreLoggerSpec extends ObjectBehavior
             throw new \RuntimeException('Child logger did not inherit context');
         }
     }
+
+    function it_applies_context_only_for_the_callback(): void
+    {
+        $logger = new PhoreLogger($driver = new PhoreCachedLoggerDriver());
+
+        $logger->inContext(['userId' => 42], function (PhoreLogger $log): void {
+            $log->info('Inside {userId}');
+        });
+        $logger->info('Outside {userId}', ['userId' => 'none']);
+
+        $logs = $driver->getLogs();
+        if (!str_contains($logs[0] ?? '', 'Inside 42')) {
+            throw new \RuntimeException('Temporary context was not applied inside the callback');
+        }
+        if (!str_contains($logs[1] ?? '', 'Outside none')) {
+            throw new \RuntimeException('Temporary context leaked outside the callback');
+        }
+    }
 }
