@@ -35,6 +35,20 @@ $log->info('User {userId} scored {score:dec=2}', [
 
 The console renders `User 42 scored 0.88  source=api`. Context keys used by placeholders are not repeated as trailing `key=value` fields.
 
+Formatting can also be declared directly on the context key. This keeps the message template short when a value always needs the same representation:
+
+```php
+$log->debug('Request finished in {duration}', [
+    'duration:ms|dec=1' => 0.03245,
+]);
+
+$log->detail('Payload: {payload}', [
+    'payload:json|file' => $payload,
+]);
+```
+
+Only the colon form is supported for context-key formats. An explicit format in the message template overrides the format declared on the context key, so `{payload:full}` can intentionally render a value inline even when the context contains `payload:file`.
+
 Placeholder filters are written after a colon and can be combined with `|`:
 
 - `{value:dec=2}` or `{value:decimal=2}` — fixed decimal places.
