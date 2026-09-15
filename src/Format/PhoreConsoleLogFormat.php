@@ -8,8 +8,11 @@ use Phore\Log\LogTypeEnum;
 
 final class PhoreConsoleLogFormat implements PhoreLogFormat
 {
-    public function __construct(private bool $colors = true)
-    {
+    public function __construct(
+        private bool $colors = true,
+        private int $placeholderMaxLines = 5,
+        private int $placeholderMaxChars = 240
+    ) {
     }
 
     public function format(LogRecord $record): string
@@ -21,8 +24,8 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
             $scope = '[' . end($parts) . '] ';
         }
         $indent = str_repeat('  ', $record->depth);
-        $message = $record->interpolatedMessage();
-        $context = $this->formatContext($record->context);
+        $message = $record->interpolatedMessage($this->placeholderMaxLines, $this->placeholderMaxChars);
+        $context = $this->formatContext($record->context, $record->usedContextKeys());
         $line = $indent . $scope . $symbol . ' ' . $message . $context;
         return $this->colors ? "\033[{$color}m{$line}\033[0m" : $line;
     }
@@ -45,14 +48,18 @@ final class PhoreConsoleLogFormat implements PhoreLogFormat
         };
     }
 
-    private function formatContext(array $context): string
+    private function formatContext(array $context, array $usedKeys): string
     {
         $parts = [];
         foreach ($context as $key => $value) {
-            if (str_contains($this->stringValue($value), "\n")) {
+            if (in_array((string)$key, $usedKeys, true)) {
                 continue;
             }
-            $parts[] = $key . '=' . $this->stringValue($value);
+            $formatted = $this->stringValue($value);
+            if (str_contains($formatted, "\n")) {
+                continue;
+            }
+            $parts[] = $key . '=' . $formatted;
         }
         return $parts === [] ? '' : '  ' . implode(' ', $parts);
     }
