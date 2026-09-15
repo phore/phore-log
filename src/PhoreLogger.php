@@ -1,267 +1,197 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: matthias
- * Date: 07.08.18
- * Time: 08:23
- */
 
 namespace Phore\Log;
 
-
-
-use Phore\Log\Driver\PhoreEchoLoggerDriver;
+use Phore\Log\Driver\PhoreConsoleLoggerDriver;
+use Phore\Log\Driver\PhoreFailureBufferLoggerDriver;
 use Phore\Log\Driver\PhoreLoggerDriver;
 use Psr\Log\AbstractLogger;
-use Psr\Log\LoggerInterface;
-use Psr\Log\LogLevel;
 
 class PhoreLogger extends AbstractLogger
 {
+    private static ?self $instance = null;
 
-    private static $startTime;
-
-
-    /**
-     * @var PhoreLoggerDriver
-     */
-    private $drivers = [];
-
-    private $minSeverity = 7;
-
-    public function __construct(PhoreLoggerDriver $driver = null)
-    {
-        if ($driver !== null)
-            $this->drivers = [$driver];
-        $this->setLogLevel(LogLevelEnum::DEBUG); //Default: Highest log level
+    public function __construct(
+        ?PhoreLoggerDriver $driver = null,
+        private ?PhoreLoggerState $state = null,
+        private string $scopeName = '',
+        private array $baseContext = []
+    ) {
+        $this->state ??= new PhoreLoggerState();
+        if ($driver !== null) {
+            $this->state->drivers[] = $driver;
+        }
     }
 
-    /**
-     * @return PhoreLoggerDriver[]
-     */
-    public function getDrivers() : array
+    /** @return PhoreLoggerDriver[] */
+    public function getDrivers(): array
     {
-        return $this->drivers;
+        return $this->state->drivers;
     }
 
-    public function getDriver(string $className) : ?PhoreLoggerDriver
+    public function getDriver(string $className): ?PhoreLoggerDriver
     {
-        foreach ($this->drivers as $curDriver) {
-            if ($curDriver instanceof $className)
-                return $curDriver;
+        foreach ($this->state->drivers as $driver) {
+            if ($driver instanceof $className) {
+                return $driver;
+            }
         }
         return null;
     }
 
-    public function setDrivers(PhoreLoggerDriver $drivers) : self
+    public function setDrivers(PhoreLoggerDriver $driver): self
     {
-        $this->drivers = [$drivers];
+        $this->state->drivers = [$driver];
         return $this;
     }
 
-    public function addDriver(PhoreLoggerDriver $driver) : self
+    public function addDriver(PhoreLoggerDriver $driver): self
     {
-        $this->drivers[] = $driver;
+        $this->state->drivers[] = $driver;
         return $this;
     }
 
-
-    /**
-     * Set the global limit of what to log. Default is DEBUG - log everything
-     *
-     * You should not use this method but instead configure appropriate logLevels
-     * for the individual drivers
-     *
-     * @param string $logLevel
-     * @return $this
-     * @throws \Exception
-     */
-    public function setLogLevel(LogLevelEnum $logLevel) : self
+    public function setLogLevel(LogLevelEnum|string|int $level): self
     {
-        $this->minSeverity = phore_loglevel_to_int($logLevel);
+        $this->state->config->setDefaultLevel($level);
         return $this;
     }
 
+    public function setScopeLevel(string $scope, LogLevelEnum|string|int $level): self
+    {
+        $this->state->config->setScopeLevel($scope, $level);
+        return $this;
+    }
 
-    private static $instance = null;
+    public function scope(string $name): self
+    {
+        $name = trim($name, " .\t\n\r\0\x0B");
+        if ($name === '') {
+            throw new \InvalidArgumentException('Scope name must not be empty');
+        }
+        $scope = $this->scopeName === '' ? $name : $this->scopeName . '.' . $name;
+        return new self(null, $this->state, $scope, $this->baseContext);
+    }
 
-    /**
-     * @deprecated
-     * @param PhoreLoggerDriver $logger
-     * @return static
-     */
-    public static function Init(PhoreLoggerDriver $logger) : self
+    public function withScope(string $name): self
+    {
+        return $this->scope($name);
+    }
+
+    public function withContext(array $context): self
+    {
+        return new self(null, $this->state, $this->scopeName, array_replace($this->baseContext, $context));
+    }
+
+    public function inContext(array $context, callable $callback): mixed
+    {
+        return $callback($this->withContext($context));
+    }
+
+    public function getScope(): string
+    {
+        return $this->scopeName;
+    }
+
+    public function log($level, $message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::coerce($level), LogTypeEnum::MESSAGE, $message, $context);
+    }
+
+    public function success($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::INFO, LogTypeEnum::SUCCESS, $message, $context);
+    }
+
+    public function step($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::INFO, LogTypeEnum::STEP, $message, $context);
+    }
+
+    public function result($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::INFO, LogTypeEnum::RESULT, $message, $context);
+    }
+
+    public function detail($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::DEBUG, LogTypeEnum::DETAIL, $message, $context);
+    }
+
+    public function skip($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::NOTICE, LogTypeEnum::SKIP, $message, $context);
+    }
+
+    public function failure($message, array $context = []): void
+    {
+        $this->emit(LogLevelEnum::ERROR, LogTypeEnum::FAILURE, $message, $context);
+    }
+
+    public function _log(LogLevelEnum $level, $message, array $context = [], int $btIndex = 1): void
+    {
+        $this->emit($level, LogTypeEnum::MESSAGE, $message, $context);
+    }
+
+    private function emit(LogLevelEnum $level, LogTypeEnum $type, mixed $message, array $context): void
+    {
+        if (!$this->state->config->shouldLog($this->scopeName, $level)) {
+            return;
+        }
+
+        $source = $this->findSource();
+        $record = new LogRecord(
+            microtime(true),
+            $level,
+            $type,
+            (string)$message,
+            array_replace($this->baseContext, $context),
+            $this->scopeName,
+            $this->scopeName === '' ? 0 : substr_count($this->scopeName, '.') + 1,
+            $source['file'],
+            $source['line']
+        );
+
+        foreach ($this->state->drivers as $driver) {
+            $driver->log($record);
+        }
+    }
+
+    private function findSource(): array
+    {
+        foreach (debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, 12) as $frame) {
+            $file = $frame['file'] ?? '';
+            if ($file === '' || str_contains($file, '/PhoreLogger.php') || str_contains($file, '/psr/log/')) {
+                continue;
+            }
+            return ['file' => $file, 'line' => (int)($frame['line'] ?? 0)];
+        }
+        return ['file' => '', 'line' => 0];
+    }
+
+    public static function Init(PhoreLoggerDriver $logger): self
     {
         self::$instance = new self($logger);
         return self::$instance;
     }
 
-    /**
-     * Register the global logging instance available with phore_log();
-     *
-     * @param PhoreLogger $logger
-     */
-    public static function Register(PhoreLogger $logger)
+    public static function Register(PhoreLogger $logger): void
     {
         self::$instance = $logger;
     }
 
-    public static function GetInstance()
+    public static function GetInstance(): self
     {
-        if (self::$instance === null)
-            self::$instance = new self(new PhoreEchoLoggerDriver()); // Default output to stdout
-        return self::$instance;
+        return self::$instance ??= new self(new PhoreConsoleLoggerDriver());
     }
 
-
-    public function _log(LogLevelEnum $logLevel, $message, array $context, int $btIndex=1)
-    {
-
-
-        if ($this->minSeverity < phore_loglevel_to_int($logLevel))
-            return;
-
-        $backtrace = debug_backtrace(DEBUG_BACKTRACE_IGNORE_ARGS, ($btIndex + 1));
-        $message = phore_escape($message, $context, function ($in) { return $in; }, true);
-
-        foreach ($this->drivers as $driver)
-            $driver->log($logLevel, $backtrace[$btIndex]["file"], $backtrace[$btIndex]["line"], $message);
-    }
-
-
-    /**
-     * Logs with an arbitrary level.
-     *
-     * @param mixed $level
-     * @param string $message
-     * @param array $context
-     *
-     * @return void
-     */
-    public function log($level, $message, array $context = array())
-    {
-        $this->_log($level, $message, $context);
-    }
-
-
-    /**
-     * System is unusable.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function emergency($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::EMERGENCY, $message, $context);
-    }
-
-    /**
-     * Action must be taken immediately.
-     *
-     * Example: Entire website down, database unavailable, etc. This should
-     * trigger the SMS alerts and wake you up.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function alert($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::ALERT, $message, $context);
-    }
-
-    /**
-     * Critical conditions.
-     *
-     * Example: Application component unavailable, unexpected exception.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function critical($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::CRITICAL, $message, $context);
-    }
-
-    /**
-     * Runtime errors that do not require immediate action but should typically
-     * be logged and monitored.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function error($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::ERROR, $message, $context);
-    }
-
-    /**
-     * Exceptional occurrences that are not errors.
-     *
-     * Example: Use of deprecated APIs, poor use of an API, undesirable things
-     * that are not necessarily wrong.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function warning($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::WARNING, $message, $context);
-    }
-
-    /**
-     * Normal but significant events.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function notice($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::NOTICE, $message, $context);
-    }
-
-    /**
-     * Interesting events.
-     *
-     * Example: User logs in, SQL logs.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function info($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::INFO, $message, $context);
-    }
-
-    /**
-     * Detailed debug information.
-     *
-     * @param string $message
-     * @param array  $context
-     *
-     * @return void
-     */
-    public function debug($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::DEBUG, $message, $context);
-    }
-
-
-    public function success($message, array $context = array())
-    {
-        $this->_log(LogLevelEnum::SUCCESS, $message, $context);
+    public static function bufferedConsole(
+        string $target = 'php://stderr',
+        LogLevelEnum $triggerLevel = LogLevelEnum::ERROR,
+        int $capacity = 200,
+        ?bool $colors = null
+    ): self {
+        $console = new PhoreConsoleLoggerDriver($target, $colors);
+        return new self(new PhoreFailureBufferLoggerDriver($console, $triggerLevel, $capacity));
     }
 }
