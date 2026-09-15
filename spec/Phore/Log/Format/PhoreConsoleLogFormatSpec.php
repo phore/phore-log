@@ -121,4 +121,30 @@ class PhoreConsoleLogFormatSpec extends ObjectBehavior
 
         $this->format($record)->shouldReturn('ℹ abcdefg … +16 chars … xyz');
     }
+
+    function it_writes_pretty_multiline_json_to_a_file_placeholder(): void
+    {
+        $record = new LogRecord(
+            microtime(true),
+            LogLevelEnum::DEBUG,
+            LogTypeEnum::DETAIL,
+            'Payload {payload:json|file}',
+            ['payload' => ['user' => ['id' => 42], 'active' => true]],
+            '',
+            0,
+            __FILE__,
+            __LINE__
+        );
+
+        $line = (new PhoreConsoleLogFormat(false))->format($record);
+        if (!preg_match('#file://(/[^\s]+)$#', $line, $match)) {
+            throw new \RuntimeException('Expected absolute file URI in console output');
+        }
+
+        $contents = file_get_contents($match[1]);
+        $expected = "{\n    \"user\": {\n        \"id\": 42\n    },\n    \"active\": true\n}";
+        if ($contents !== $expected) {
+            throw new \RuntimeException('Expected pretty multiline JSON in placeholder file');
+        }
+    }
 }
