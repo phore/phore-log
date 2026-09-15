@@ -7,8 +7,13 @@ use Phore\Log\PhoreStopWatch;
 
 class PhoreDefaultLogFormat implements PhoreLogFormat
 {
-    public function __construct(private bool $level = true, private bool $time = true, private bool $lineNo = true)
-    {
+    public function __construct(
+        private bool $level = true,
+        private bool $time = true,
+        private bool $lineNo = true,
+        private int $placeholderMaxLines = 5,
+        private int $placeholderMaxChars = 240
+    ) {
     }
 
     public function format(LogRecord $record): string
@@ -26,6 +31,6 @@ class PhoreDefaultLogFormat implements PhoreLogFormat
         if ($record->scope !== '') {
             $line .= '[' . $record->scope . ']';
         }
-        return $line . ' ' . $record->interpolatedMessage();
+        return $line . ' ' . $record->interpolatedMessage($this->placeholderMaxLines, $this->placeholderMaxChars);
     }
 }
