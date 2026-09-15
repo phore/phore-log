@@ -3,6 +3,7 @@
 namespace Phore\Log;
 
 use Phore\Log\Driver\PhoreConsoleLoggerDriver;
+use Phore\Log\Driver\PhoreFailureBufferLoggerDriver;
 use Phore\Log\Driver\PhoreLoggerDriver;
 use Psr\Log\AbstractLogger;
 
@@ -80,6 +81,11 @@ class PhoreLogger extends AbstractLogger
     public function withContext(array $context): self
     {
         return new self(null, $this->state, $this->scopeName, array_replace($this->baseContext, $context));
+    }
+
+    public function inContext(array $context, callable $callback): mixed
+    {
+        return $callback($this->withContext($context));
     }
 
     public function getScope(): string
@@ -177,5 +183,15 @@ class PhoreLogger extends AbstractLogger
     public static function GetInstance(): self
     {
         return self::$instance ??= new self(new PhoreConsoleLoggerDriver());
+    }
+
+    public static function bufferedConsole(
+        string $target = 'php://stderr',
+        LogLevelEnum $triggerLevel = LogLevelEnum::ERROR,
+        int $capacity = 200,
+        ?bool $colors = null
+    ): self {
+        $console = new PhoreConsoleLoggerDriver($target, $colors);
+        return new self(new PhoreFailureBufferLoggerDriver($console, $triggerLevel, $capacity));
     }
 }
