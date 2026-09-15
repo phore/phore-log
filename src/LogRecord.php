@@ -17,7 +17,7 @@ final readonly class LogRecord
     ) {
     }
 
-    public function interpolatedMessage(?int $defaultMaxLines = null): string
+    public function interpolatedMessage(?int $defaultMaxLines = null, ?int $defaultMaxChars = null): string
     {
         $openBrace = "\x00PHORE_OPEN_BRACE\x00";
         $closeBrace = "\x00PHORE_CLOSE_BRACE\x00";
@@ -25,14 +25,14 @@ final readonly class LogRecord
 
         $message = preg_replace_callback(
             '/\{([A-Za-z_][A-Za-z0-9_.-]*)(?::([^{}]+))?\}/',
-            function (array $match) use ($defaultMaxLines): string {
+            function (array $match) use ($defaultMaxLines, $defaultMaxChars): string {
                 $key = $match[1];
                 if (!array_key_exists($key, $this->context)) {
                     return $match[0];
                 }
 
                 $filters = isset($match[2]) ? array_values(array_filter(array_map('trim', explode('|', $match[2])))) : [];
-                return $this->formatPlaceholderValue($this->context[$key], $filters, $defaultMaxLines);
+                return $this->formatPlaceholderValue($this->context[$key], $filters, $defaultMaxLines, $defaultMaxChars);
             },
             $message
         ) ?? $message;
@@ -48,42 +48,75 @@ final readonly class LogRecord
         return array_values(array_unique($matches[1] ?? []));
     }
 
-    private function formatPlaceholderValue(mixed $value, array $filters, ?int $defaultMaxLines): string
+    private function formatPlaceholderValue(mixed $value, array $filters, ?int $defaultMaxLines, ?int $defaultMaxChars): string
     {
-        $full = in_array('full', $filters, true);
-        $hasLinesFilter = false;
-        $formatted = $this->stringValue($value);
+        $full = false;
+        $json = false;
+        $milliseconds = false;
+        $decimals = null;
+        $trim = null;
+        $lines = null;
 
         foreach ($filters as $filter) {
             if ($filter === 'full') {
+                $full = true;
                 continue;
             }
             if ($filter === 'json') {
-                $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: get_debug_type($value);
+                $json = true;
                 continue;
             }
             if ($filter === 'ms') {
-                if (!is_numeric($value)) {
-                    throw new \InvalidArgumentException('The :ms placeholder format requires a numeric value');
-                }
-                $milliseconds = rtrim(rtrim(number_format((float)$value * 1000, 3, '.', ''), '0'), '.');
-                $formatted = $milliseconds . ' ms';
+                $milliseconds = true;
+                continue;
+            }
+            if (preg_match('/^(?:dec|decimal)=(\d+)$/', $filter, $match)) {
+                $decimals = (int)$match[1];
                 continue;
             }
             if (preg_match('/^trim=(\d+)$/', $filter, $match)) {
-                $formatted = $this->trimCharacters($formatted, (int)$match[1]);
+                $trim = (int)$match[1];
                 continue;
             }
             if (preg_match('/^lines=(\d+)$/', $filter, $match)) {
-                $hasLinesFilter = true;
-                $formatted = $this->trimLines($formatted, (int)$match[1]);
+                $lines = (int)$match[1];
                 continue;
             }
             throw new \InvalidArgumentException("Unknown placeholder format '$filter'");
         }
 
-        if (!$full && !$hasLinesFilter && $defaultMaxLines !== null) {
+        if ($milliseconds || $decimals !== null) {
+            if (!is_numeric($value)) {
+                throw new \InvalidArgumentException('Numeric placeholder formats require a numeric value');
+            }
+            $number = (float)$value;
+            if ($milliseconds) {
+                $number *= 1000;
+            }
+            if ($decimals !== null) {
+                $formatted = number_format($number, $decimals, '.', '');
+            } else {
+                $formatted = rtrim(rtrim(number_format($number, 3, '.', ''), '0'), '.');
+            }
+            if ($milliseconds) {
+                $formatted .= ' ms';
+            }
+        } elseif ($json) {
+            $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: get_debug_type($value);
+        } else {
+            $formatted = $this->stringValue($value);
+        }
+
+        if ($lines !== null) {
+            $formatted = $this->trimLines($formatted, $lines);
+        } elseif (!$full && $defaultMaxLines !== null) {
             $formatted = $this->trimLines($formatted, $defaultMaxLines);
+        }
+
+        if ($trim !== null) {
+            $formatted = $this->trimCharacters($formatted, $trim);
+        } elseif (!$full && $defaultMaxChars !== null) {
+            $formatted = $this->trimCharacters($formatted, $defaultMaxChars);
         }
 
         return $formatted;
@@ -106,8 +139,15 @@ final readonly class LogRecord
         if ($length <= $limit) {
             return $value;
         }
-        $trimmed = function_exists('mb_substr') ? mb_substr($value, 0, $limit) : substr($value, 0, $limit);
-        return $trimmed . '… +' . ($length - $limit) . ' chars';
+
+        $headLength = (int)ceil($limit * 0.7);
+        $tailLength = $limit - $headLength;
+        $head = function_exists('mb_substr') ? mb_substr($value, 0, $headLength) : substr($value, 0, $headLength);
+        $tail = $tailLength > 0
+            ? (function_exists('mb_substr') ? mb_substr($value, -$tailLength) : substr($value, -$tailLength))
+            : '';
+
+        return $head . ' … +' . ($length - $limit) . ' chars … ' . $tail;
     }
 
     private function trimLines(string $value, int $limit): string
@@ -116,10 +156,17 @@ final readonly class LogRecord
             return '';
         }
         $lines = preg_split('/\R/u', $value) ?: [$value];
-        if (count($lines) <= $limit) {
+        $count = count($lines);
+        if ($count <= $limit) {
             return $value;
         }
-        $hidden = count($lines) - $limit;
-        return implode(PHP_EOL, array_slice($lines, 0, $limit)) . PHP_EOL . '… +' . $hidden . ' lines';
+
+        $headCount = (int)ceil($limit / 2);
+        $tailCount = $limit - $headCount;
+        $head = array_slice($lines, 0, $headCount);
+        $tail = $tailCount > 0 ? array_slice($lines, -$tailCount) : [];
+        $hidden = $count - $limit;
+
+        return implode(PHP_EOL, array_merge($head, ['… +' . $hidden . ' lines …'], $tail));
     }
 }
