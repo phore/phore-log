@@ -1,57 +1,39 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: matthias
- * Date: 07.08.18
- * Time: 08:30
- */
 
 namespace Phore\Log\Driver;
-
 
 use Phore\Log\Format\PhoreDefaultLogFormat;
 use Phore\Log\Format\PhoreLogFormat;
 use Phore\Log\LogLevelEnum;
-use Phore\Log\PhoreLogger;
-use Phore\Log\PhoreStopWatch;
-
+use Phore\Log\LogRecord;
 
 class PhoreEchoLoggerDriver implements PhoreLoggerDriver
 {
+    private PhoreLogFormat $logFormat;
+    private LogLevelEnum $minLevel = LogLevelEnum::DEBUG;
 
-    private $lastFile = null;
-
-    private $channel;
-
-    /**
-     * @var PhoreDefaultLogFormat
-     */
-    private $logFormat;
-
-    private $minSeverity = 7;
-
-    public function __construct($logTo="php://stderr")
+    public function __construct(private string $logTo = 'php://stderr')
     {
         $this->logFormat = new PhoreDefaultLogFormat();
-        $this->channel = $logTo;
     }
 
-
-    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
+    public function log(LogRecord $record): void
     {
-        if (phore_loglevel_to_int($logLevel) > $this->minSeverity)
-            return;
-
-        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, $message, $context);
-        file_put_contents($this->channel, $logLine ."\n", FILE_APPEND);
+        if ($record->level->severity() > $this->minLevel->severity()) return;
+        file_put_contents($this->logTo, $this->logFormat->format($record) . PHP_EOL, FILE_APPEND);
     }
 
-    public function setSeverity(LogLevelEnum $severity)
+    public function setSeverity(LogLevelEnum|string|int $severity): void
     {
-        $this->minSeverity = phore_loglevel_to_int($severity);
+        $this->setMinSeverity(LogLevelEnum::coerce($severity));
     }
 
-    public function setFormatter(PhoreLogFormat $logFormat)
+    public function setMinSeverity(LogLevelEnum $logLevel): void
+    {
+        $this->minLevel = $logLevel;
+    }
+
+    public function setFormatter(PhoreLogFormat $logFormat): void
     {
         $this->logFormat = $logFormat;
     }

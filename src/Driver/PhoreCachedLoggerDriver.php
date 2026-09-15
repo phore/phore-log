@@ -1,70 +1,50 @@
 <?php
-/**
- * Created by PhpStorm.
- * User: matthias
- * Date: 07.08.18
- * Time: 08:30
- */
 
 namespace Phore\Log\Driver;
 
-
 use Phore\Log\Format\PhoreDefaultLogFormat;
 use Phore\Log\Format\PhoreLogFormat;
-use Phore\Log\PhoreLogger;
-use Phore\Log\PhoreStopWatch;
+use Phore\Log\LogLevelEnum;
+use Phore\Log\LogRecord;
 
 class PhoreCachedLoggerDriver implements PhoreLoggerDriver
 {
-
-    private $lastFile = null;
-
-    private $logs = [];
-
-    private $logFormat;
+    private array $logs = [];
+    private PhoreLogFormat $logFormat;
+    private LogLevelEnum $minLevel = LogLevelEnum::DEBUG;
 
     public function __construct()
     {
         $this->logFormat = new PhoreDefaultLogFormat();
     }
 
-
-    public function log (int $logLevel, string $file, int $lineNo, ...$params)
+    public function log(LogRecord $record): void
     {
-
-        if ($this->lastFile !== $file) {
-            $this->lastFile = $file;
-        }
-
-
-        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, ...$params);
-        $this->logs[] = $logLine;
+        if ($record->level->severity() > $this->minLevel->severity()) return;
+        $this->logs[] = $this->logFormat->format($record);
     }
 
-    /**
-     * @return string[]
-     */
-    public function getLogs() : array
+    public function getLogs(): array
     {
         return $this->logs;
     }
 
-
-    public function getLogsAsString($prefix="# ") : string
+    public function getLogsAsString(string $prefix = '# '): string
     {
-        $out = "";
-        foreach ($this->logs as $log) {
-            $out .= "\n" . $prefix . $log;
-        }
-        return $out;
+        return implode('', array_map(fn(string $log) => "\n" . $prefix . $log, $this->logs));
     }
 
-    public function setSeverity(int $severity)
+    public function setSeverity(LogLevelEnum|string|int $severity): void
     {
-        // TODO: Implement setSeverity() method.
+        $this->setMinSeverity(LogLevelEnum::coerce($severity));
     }
 
-    public function setFormatter(PhoreLogFormat $logFormat)
+    public function setMinSeverity(LogLevelEnum $logLevel): void
+    {
+        $this->minLevel = $logLevel;
+    }
+
+    public function setFormatter(PhoreLogFormat $logFormat): void
     {
         $this->logFormat = $logFormat;
     }

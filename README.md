@@ -1,11 +1,6 @@
 # Phore log :: PSR-3 compatible logger
 
-[![Actions Status](https://github.com/phore/phore-log/workflows/tests/badge.svg)](https://github.com/phore/phore-log/actions)
-
-- PSR-3 compliant logger
-- Multiple targets (syslog, file, pipe) with individual configuration
-- Quick configuration with single uri
-- Multi-format support
+Phore Log combines PSR-3 logging with readable console output for exploratory development and structured module scopes.
 
 ## Installation
 
@@ -13,58 +8,56 @@
 composer require phore/log
 ```
 
-## Logger Usage
+Requires PHP 8.5 or newer.
 
-**Easy usage**
+## Console logging
+
 ```php
-phore_Log("Some log message"); // Debug message
-phore_log("Value :val expected", ["val"=>"some unescaped value"]); // Auto escaping
-phore_log()->emergency("Emergency Message");
+$log = new Phore\Log\PhoreLogger(new Phore\Log\Driver\PhoreConsoleLoggerDriver());
+$log->step('Load customer');
+$log->success('Customer loaded', ['id' => 42]);
+$log->warning('Invoice address is incomplete');
 ```
 
-## Configuration
+Console output uses semantic symbols and ANSI colors when the output stream is a TTY. Other drivers receive the same structured record without console escape sequences.
 
-**Global configuration**
+## Scoped child loggers
+
+Child loggers inherit drivers, context and central configuration while adding a module scope:
+
 ```php
-PhoreLogger::Register(PhoreLoggerFactory::BuildFromUri("syslog+udp://metrics.host.tld:4200?tag=server1"));
+$log->setLogLevel(Phore\Log\LogLevelEnum::INFO);
+$log->setScopeLevel('user', Phore\Log\LogLevelEnum::DEBUG);
+
+$userLog = $log->scope('user');
+$repositoryLog = $userLog->scope('repository');
+
+$repositoryLog->debug('Load current user');
 ```
 
-**Multi instance**
-```
-$logger = PhoreLoggerFactory::BuildFromUri();
-```
+A level configured for `user` is inherited by `user.repository` and deeper scopes. More specific scope rules win. `user.*` is accepted as an explicit subtree rule.
 
-### Logging
-```
-phore_log("something to log :message", ["message"=>"Hello"]);
+## Context
 
-phore_log()->setLogLevel(LogLevel::DEBUG);
-phore_log()->emergency("emergency"); 
-
+```php
+$userLog = $log->scope('user')->withContext(['userId' => 42]);
+$userLog->success('User {userId} updated');
 ```
 
-### LogLevel
+Context stays structured for non-console drivers and is inherited by child loggers.
 
-| LogLevel              | Code |
-|-----------------------|------|
-| LogLevel::EMERGENCY   | 0    |
-| LogLevel::ALERT       | 1    |
-| LogLevel::CRITICAL    | 2    |
-| LogLevel::ERROR       | 3    |
-| LogLevel::WARNING     | 4    |
-| LogLevel::NOTICE      | 5    |
-| LogLevel::INFO        | 6    |
-| LogLevel::DEBUG       | 7 (default)   |
+## Semantic console types
 
+Besides the PSR-3 methods, Phore Log provides `step()`, `success()`, `result()`, `detail()`, `skip()` and `failure()`. These are presentation semantics, not additional severity levels: e.g. `success()` is an INFO record and `detail()` is DEBUG.
 
-### Logging configuration
+## URI configuration
 
-You can specify one or more logger with different log levels.
-
+```php
+Phore\Log\PhoreLogger::Register(
+    Phore\Log\PhoreLoggerFactory::BuildFromUri('def://stderr?severity=info')
+);
 ```
-syslog+udp://<hostname>:<port>/<tag>?severity=4&
-syslogng+udp://
-def://stdout?severity=4
-def://stderr?severity=4
-file:///var/log/xy.log?severity=4
-```
+
+Supported targets include `def://stderr`, `def://stdout`, `console://stderr`, `file:///path/to/file.log` and `syslog+udp://host:port`.
+
+See `examples/01-console.php`, `examples/02-scoped-modules.php` and `examples/03-injected-child-logger.php` for complete examples.
