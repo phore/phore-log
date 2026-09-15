@@ -22,21 +22,34 @@ final readonly class LogRecord
         $openBrace = "\x00PHORE_OPEN_BRACE\x00";
         $closeBrace = "\x00PHORE_CLOSE_BRACE\x00";
         $message = str_replace(['{{', '}}'], [$openBrace, $closeBrace], $this->message);
+        $positional = [];
+        foreach ($this->context as $key => $value) {
+            if (is_int($key)) {
+                $positional[] = $value;
+            }
+        }
+        $position = 0;
 
         $message = preg_replace_callback(
-            '/\{([A-Za-z_][A-Za-z0-9_.-]*)(?::([^{}]+))?\}/',
-            function (array $match) use ($defaultMaxLines, $defaultMaxChars): string {
-                $key = $match[1];
+            '/\{([A-Za-z_][A-Za-z0-9_.-]*)?(?::([^{}]+))?\}/',
+            function (array $match) use ($defaultMaxLines, $defaultMaxChars, $positional, &$position): string {
+                $key = $match[1] ?? '';
+                $templateFilters = isset($match[2]) ? $this->parseFilters($match[2]) : [];
+
+                if ($key === '') {
+                    if (!array_key_exists($position, $positional)) {
+                        return $match[0];
+                    }
+                    $value = $positional[$position++];
+                    return $this->formatPlaceholderValue($value, $templateFilters, $defaultMaxLines, $defaultMaxChars);
+                }
+
                 $entry = $this->resolveContextEntry($key);
                 if ($entry === null) {
                     return $match[0];
                 }
 
-                $templateFilters = isset($match[2])
-                    ? $this->parseFilters($match[2])
-                    : [];
                 $filters = $templateFilters !== [] ? $templateFilters : $entry['filters'];
-
                 return $this->formatPlaceholderValue($entry['value'], $filters, $defaultMaxLines, $defaultMaxChars);
             },
             $message
@@ -54,7 +67,8 @@ final readonly class LogRecord
     }
 
     /**
-     * Returns context for human-readable suffix output without key-level format metadata.
+     * Returns named context for human-readable suffix output without key-level format metadata.
+     * Numeric entries are positional placeholder values and are never repeated as suffix fields.
      * The original structured context remains untouched in the record.
      */
     public function displayContext(): array
@@ -62,7 +76,6 @@ final readonly class LogRecord
         $result = [];
         foreach ($this->context as $key => $value) {
             if (!is_string($key)) {
-                $result[$key] = $value;
                 continue;
             }
 
