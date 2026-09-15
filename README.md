@@ -21,6 +21,38 @@ $log->warning('Invoice address is incomplete');
 
 Console output uses semantic symbols and ANSI colors when the output stream is a TTY. Other drivers receive the same structured record without console escape sequences.
 
+## Message templates
+
+Named context values can be embedded directly in log messages:
+
+```php
+$log->info('User {userId} scored {score:dec=2}', [
+    'userId' => 42,
+    'score' => 0.87654,
+    'source' => 'api',
+]);
+```
+
+The console renders `User 42 scored 0.88  source=api`. Context keys used by placeholders are not repeated as trailing `key=value` fields.
+
+Placeholder filters are written after a colon and can be combined with `|`:
+
+- `{value:dec=2}` or `{value:decimal=2}` — fixed decimal places.
+- `{duration:ms}` — seconds rendered as milliseconds.
+- `{duration:ms|dec=1}` — milliseconds with explicit precision.
+- `{text:trim=80}` — explicit character budget while preserving beginning and end.
+- `{text:lines=5}` — explicit line budget while preserving beginning and end.
+- `{value:json}` — pretty JSON representation.
+- `{value:serialize}` — PHP serialized representation.
+- `{text:full}` — disable automatic shortening for this placeholder.
+- `{value:file}` — write the complete value to a temporary file and render only its absolute `file://` URI.
+
+Long values are shortened automatically in console/default output. More than 5 lines or 240 characters are compacted while retaining both the beginning and end, with the omitted amount shown as `… +N lines …` or `… +N chars …`. The structured context remains complete.
+
+For file placeholders, strings are written unchanged, arrays are written as pretty multiline JSON, and objects are written with PHP `serialize()`. `{payload:json|file}` forces pretty JSON and `{payload:serialize|file}` forces serialized output. Files are named sequentially as `phore-log-000001.txt`, `phore-log-000002.txt`, and so on in the system temp directory. On the first file write of a new PHP process, leftover `phore-log-*.txt` files from the previous run are removed.
+
+Literal braces can be escaped with `{{` and `}}`.
+
 ## Scoped child loggers
 
 Child loggers inherit drivers, context and central configuration while adding a module scope:
@@ -82,4 +114,4 @@ Phore\Log\PhoreLogger::Register(
 
 Supported targets include `def://stderr`, `def://stdout`, `console://stderr`, `file:///path/to/file.log` and `syslog+udp://host:port`.
 
-See `examples/01-console.php` through `examples/05-failure-buffer.php` for the complete example sequence.
+See `examples/01-console.php` through `examples/06-message-templates.php` for the complete example sequence.
