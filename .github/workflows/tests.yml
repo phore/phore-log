@@ -12,5 +12,5 @@ jobs:
           php-version: '8.5'
       - name: Install dependencies
         run: composer update --prefer-dist --no-interaction
-      - name: UnitTests
-        run: vendor/bin/ptest tests/
+      - name: PHPSpec
+        run: vendor/bin/phpspec run --no-interaction

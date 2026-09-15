@@ -23,6 +23,6 @@
   },
   "minimum-stability": "dev",
   "require-dev": {
-    "phore/tester": "*"
+    "phpspec/phpspec": "^8.3"
   }
 }
