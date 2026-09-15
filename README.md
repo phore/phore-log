@@ -23,47 +23,53 @@ Console output uses semantic symbols and ANSI colors when the output stream is a
 
 ## Message templates
 
-Named context values can be embedded directly in log messages:
+For one or a few values, numeric context entries can be consumed positionally by `{}` placeholders from left to right:
 
 ```php
-$log->info('User {userId} scored {score:dec=2}', [
-    'userId' => 42,
-    'score' => 0.87654,
-    'source' => 'api',
-]);
+$log->info('User {} scored {:dec=2}', [42, 0.87654]);
+$log->debug('Request finished in {:ms|dec=1}', [0.03245]);
 ```
 
-The console renders `User 42 scored 0.88  source=api`. Context keys used by placeholders are not repeated as trailing `key=value` fields.
-
-Formatting can also be declared directly on the context key. This keeps the message template short when a value always needs the same representation:
+Numeric and named context can be mixed. Numeric entries are consumed only by positional placeholders, while named entries can be referenced explicitly and unused named entries remain structured context:
 
 ```php
-$log->debug('Request finished in {duration}', [
-    'duration:ms|dec=1' => 0.03245,
-]);
+$log->debug('Imported {} records for {tenant}', [17, 'tenant' => 'acme', 'source' => 'csv']);
+```
 
-$log->detail('Payload: {payload}', [
-    'payload:json|file' => $payload,
-]);
+The console renders `Imported 17 records for acme  source=csv`.
+
+Named context values remain useful when the field name itself is important:
+
+```php
+$log->info('User {userId} scored {score:dec=2}', ['userId' => 42, 'score' => 0.87654, 'source' => 'api']);
+```
+
+Context keys used by placeholders are not repeated as trailing `key=value` fields.
+
+Formatting can also be declared directly on a named context key:
+
+```php
+$log->debug('Request finished in {duration}', ['duration:ms|dec=1' => 0.03245]);
+$log->detail('Payload: {payload}', ['payload:json|file' => $payload]);
 ```
 
 Only the colon form is supported for context-key formats. An explicit format in the message template overrides the format declared on the context key, so `{payload:full}` can intentionally render a value inline even when the context contains `payload:file`.
 
 Placeholder filters are written after a colon and can be combined with `|`:
 
-- `{value:dec=2}` or `{value:decimal=2}` — fixed decimal places.
-- `{duration:ms}` — seconds rendered as milliseconds.
-- `{duration:ms|dec=1}` — milliseconds with explicit precision.
-- `{text:trim=80}` — explicit character budget while preserving beginning and end.
-- `{text:lines=5}` — explicit line budget while preserving beginning and end.
-- `{value:json}` — pretty JSON representation.
-- `{value:serialize}` — PHP serialized representation.
-- `{text:full}` — disable automatic shortening for this placeholder.
-- `{value:file}` — write the complete value to a temporary file and render only its absolute `file://` URI.
+- `{:dec=2}` / `{value:dec=2}` — fixed decimal places.
+- `{:ms}` / `{duration:ms}` — seconds rendered as milliseconds.
+- `{:ms|dec=1}` — milliseconds with explicit precision.
+- `{:trim=80}` — explicit character budget while preserving beginning and end.
+- `{:lines=5}` — explicit line budget while preserving beginning and end.
+- `{:json}` — pretty JSON representation.
+- `{:serialize}` — PHP serialized representation.
+- `{:full}` — disable automatic shortening for this placeholder.
+- `{:file}` — write the complete value to a temporary file and render only its absolute `file://` URI.
 
 Long values are shortened automatically in console/default output. More than 5 lines or 240 characters are compacted while retaining both the beginning and end, with the omitted amount shown as `… +N lines …` or `… +N chars …`. The structured context remains complete.
 
-For file placeholders, strings are written unchanged, arrays are written as pretty multiline JSON, and objects are written with PHP `serialize()`. `{payload:json|file}` forces pretty JSON and `{payload:serialize|file}` forces serialized output. Files are named sequentially as `phore-log-000001.txt`, `phore-log-000002.txt`, and so on in the system temp directory. On the first file write of a new PHP process, leftover `phore-log-*.txt` files from the previous run are removed.
+For file placeholders, strings are written unchanged, arrays are written as pretty multiline JSON, and objects are written with PHP `serialize()`. `{:json|file}` forces pretty JSON and `{:serialize|file}` forces serialized output. Files are named sequentially as `phore-log-000001.txt`, `phore-log-000002.txt`, and so on in the system temp directory. On the first file write of a new PHP process, leftover `phore-log-*.txt` files from the previous run are removed.
 
 Literal braces can be escaped with `{{` and `}}`.
 
