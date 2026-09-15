@@ -27,12 +27,17 @@ final readonly class LogRecord
             '/\{([A-Za-z_][A-Za-z0-9_.-]*)(?::([^{}]+))?\}/',
             function (array $match) use ($defaultMaxLines, $defaultMaxChars): string {
                 $key = $match[1];
-                if (!array_key_exists($key, $this->context)) {
+                $entry = $this->resolveContextEntry($key);
+                if ($entry === null) {
                     return $match[0];
                 }
 
-                $filters = isset($match[2]) ? array_values(array_filter(array_map('trim', explode('|', $match[2])))) : [];
-                return $this->formatPlaceholderValue($this->context[$key], $filters, $defaultMaxLines, $defaultMaxChars);
+                $templateFilters = isset($match[2])
+                    ? $this->parseFilters($match[2])
+                    : [];
+                $filters = $templateFilters !== [] ? $templateFilters : $entry['filters'];
+
+                return $this->formatPlaceholderValue($entry['value'], $filters, $defaultMaxLines, $defaultMaxChars);
             },
             $message
         ) ?? $message;
@@ -46,6 +51,62 @@ final readonly class LogRecord
         $message = str_replace(['{{', '}}'], ['', ''], $this->message);
         preg_match_all('/\{([A-Za-z_][A-Za-z0-9_.-]*)(?::[^{}]+)?\}/', $message, $matches);
         return array_values(array_unique($matches[1] ?? []));
+    }
+
+    /**
+     * Returns context for human-readable suffix output without key-level format metadata.
+     * The original structured context remains untouched in the record.
+     */
+    public function displayContext(): array
+    {
+        $result = [];
+        foreach ($this->context as $key => $value) {
+            if (!is_string($key)) {
+                $result[$key] = $value;
+                continue;
+            }
+
+            [$baseKey] = $this->parseContextKey($key);
+            if (!array_key_exists($baseKey, $result) || $baseKey === $key) {
+                $result[$baseKey] = $value;
+            }
+        }
+        return $result;
+    }
+
+    private function resolveContextEntry(string $key): ?array
+    {
+        if (array_key_exists($key, $this->context)) {
+            return ['value' => $this->context[$key], 'filters' => []];
+        }
+
+        foreach ($this->context as $contextKey => $value) {
+            if (!is_string($contextKey)) {
+                continue;
+            }
+            [$baseKey, $filters] = $this->parseContextKey($contextKey);
+            if ($baseKey === $key) {
+                return ['value' => $value, 'filters' => $filters];
+            }
+        }
+
+        return null;
+    }
+
+    private function parseContextKey(string $key): array
+    {
+        if (preg_match('/^([A-Za-z_][A-Za-z0-9_.-]*):(.+)$/', $key, $match)) {
+            return [$match[1], $this->parseFilters($match[2])];
+        }
+        if (preg_match('/^([A-Za-z_][A-Za-z0-9_.-]*)\|(.+)$/', $key, $match)) {
+            return [$match[1], $this->parseFilters($match[2])];
+        }
+        return [$key, []];
+    }
+
+    private function parseFilters(string $filters): array
+    {
+        return array_values(array_filter(array_map('trim', explode('|', $filters))));
     }
 
     private function formatPlaceholderValue(mixed $value, array $filters, ?int $defaultMaxLines, ?int $defaultMaxChars): string
