@@ -53,6 +53,7 @@ final readonly class LogRecord
         $full = false;
         $json = false;
         $milliseconds = false;
+        $toFile = false;
         $decimals = null;
         $trim = null;
         $lines = null;
@@ -68,6 +69,10 @@ final readonly class LogRecord
             }
             if ($filter === 'ms') {
                 $milliseconds = true;
+                continue;
+            }
+            if ($filter === 'file') {
+                $toFile = true;
                 continue;
             }
             if (preg_match('/^(?:dec|decimal)=(\d+)$/', $filter, $match)) {
@@ -102,9 +107,13 @@ final readonly class LogRecord
                 $formatted .= ' ms';
             }
         } elseif ($json) {
-            $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: get_debug_type($value);
+            $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: get_debug_type($value);
         } else {
             $formatted = $this->stringValue($value);
+        }
+
+        if ($toFile) {
+            return LogPlaceholderFileStore::write($formatted);
         }
 
         if ($lines !== null) {
@@ -127,7 +136,7 @@ final readonly class LogRecord
         if ($value === null) return 'null';
         if (is_bool($value)) return $value ? 'true' : 'false';
         if (is_scalar($value) || $value instanceof \Stringable) return (string)$value;
-        return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?: get_debug_type($value);
+        return json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: get_debug_type($value);
     }
 
     private function trimCharacters(string $value, int $limit): string
