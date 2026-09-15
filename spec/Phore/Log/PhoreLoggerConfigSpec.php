@@ -15,27 +15,44 @@ class PhoreLoggerConfigSpec extends ObjectBehavior
 
     function it_logs_debug_by_default(): void
     {
-        $this->shouldLog('', LogLevelEnum::DEBUG)->shouldReturn(true);
+        $config = new PhoreLoggerConfig();
+        if (!$config->shouldLog('', LogLevelEnum::DEBUG)) {
+            throw new \RuntimeException('DEBUG should be enabled by default');
+        }
     }
 
     function it_inherits_scope_levels_to_child_modules(): void
     {
-        $this->setDefaultLevel(LogLevelEnum::INFO);
-        $this->setScopeLevel('user', LogLevelEnum::DEBUG);
+        $config = new PhoreLoggerConfig();
+        $config->setDefaultLevel(LogLevelEnum::INFO);
+        $config->setScopeLevel('user', LogLevelEnum::DEBUG);
 
-        $this->shouldLog('mail', LogLevelEnum::DEBUG)->shouldReturn(false);
-        $this->shouldLog('user', LogLevelEnum::DEBUG)->shouldReturn(true);
-        $this->shouldLog('user.repository', LogLevelEnum::DEBUG)->shouldReturn(true);
+        if ($config->shouldLog('mail', LogLevelEnum::DEBUG)) {
+            throw new \RuntimeException('Unconfigured module should inherit INFO');
+        }
+        if (!$config->shouldLog('user', LogLevelEnum::DEBUG)) {
+            throw new \RuntimeException('Configured module should log DEBUG');
+        }
+        if (!$config->shouldLog('user.repository', LogLevelEnum::DEBUG)) {
+            throw new \RuntimeException('Child module should inherit DEBUG');
+        }
     }
 
     function it_prefers_the_most_specific_scope_rule(): void
     {
-        $this->setDefaultLevel(LogLevelEnum::INFO);
-        $this->setScopeLevel('user', LogLevelEnum::DEBUG);
-        $this->setScopeLevel('user.repository', LogLevelEnum::WARNING);
+        $config = new PhoreLoggerConfig();
+        $config->setDefaultLevel(LogLevelEnum::INFO);
+        $config->setScopeLevel('user', LogLevelEnum::DEBUG);
+        $config->setScopeLevel('user.repository', LogLevelEnum::WARNING);
 
-        $this->shouldLog('user.validation', LogLevelEnum::DEBUG)->shouldReturn(true);
-        $this->shouldLog('user.repository', LogLevelEnum::INFO)->shouldReturn(false);
-        $this->shouldLog('user.repository', LogLevelEnum::WARNING)->shouldReturn(true);
+        if (!$config->shouldLog('user.validation', LogLevelEnum::DEBUG)) {
+            throw new \RuntimeException('Sibling scope should keep inherited DEBUG');
+        }
+        if ($config->shouldLog('user.repository', LogLevelEnum::INFO)) {
+            throw new \RuntimeException('More specific WARNING rule should hide INFO');
+        }
+        if (!$config->shouldLog('user.repository', LogLevelEnum::WARNING)) {
+            throw new \RuntimeException('More specific WARNING rule should show WARNING');
+        }
     }
 }
