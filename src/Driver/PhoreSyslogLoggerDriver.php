@@ -58,6 +58,8 @@ class PhoreSyslogLoggerDriver implements PhoreLoggerDriver
 
     public function __destruct()
     {
-        if ($this->sock !== false && $this->sock !== null) socket_close($this->sock);
+        if (isset($this->sock) && $this->sock !== false && $this->sock !== null) {
+            socket_close($this->sock);
+        }
     }
 }
