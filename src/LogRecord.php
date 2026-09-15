@@ -52,6 +52,7 @@ final readonly class LogRecord
     {
         $full = false;
         $json = false;
+        $serialize = false;
         $milliseconds = false;
         $toFile = false;
         $decimals = null;
@@ -65,6 +66,10 @@ final readonly class LogRecord
             }
             if ($filter === 'json') {
                 $json = true;
+                continue;
+            }
+            if ($filter === 'serialize') {
+                $serialize = true;
                 continue;
             }
             if ($filter === 'ms') {
@@ -106,8 +111,14 @@ final readonly class LogRecord
             if ($milliseconds) {
                 $formatted .= ' ms';
             }
+        } elseif ($serialize) {
+            $formatted = serialize($value);
         } elseif ($json) {
             $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: get_debug_type($value);
+        } elseif ($toFile && is_object($value)) {
+            $formatted = serialize($value);
+        } elseif ($toFile && is_array($value)) {
+            $formatted = json_encode($value, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) ?: '[]';
         } else {
             $formatted = $this->stringValue($value);
         }
