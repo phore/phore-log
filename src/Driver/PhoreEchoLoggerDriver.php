@@ -46,9 +46,17 @@ class PhoreEchoLoggerDriver implements PhoreLoggerDriver
         file_put_contents($this->channel, $logLine ."\n", FILE_APPEND);
     }
 
+    public function setMinSeverity(LogLevelEnum $logLevel)
+    {
+        $this->minSeverity = phore_loglevel_to_int($logLevel);
+    }
+
+    /**
+     * @deprecated Use setMinSeverity()
+     */
     public function setSeverity(LogLevelEnum $severity)
     {
-        $this->minSeverity = phore_loglevel_to_int($severity);
+        $this->setMinSeverity($severity);
     }
 
     public function setFormatter(PhoreLogFormat $logFormat)

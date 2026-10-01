@@ -4,8 +4,8 @@
 namespace Phore\Log;
 
 
-use Phore\Log\Logger\PhoreEchoLoggerDriver;
-use Phore\Log\Logger\PhoreSyslogLoggerDriver;
+use Phore\Log\Driver\PhoreEchoLoggerDriver;
+use Phore\Log\Driver\PhoreSyslogLoggerDriver;
 
 class PhoreLoggerFactory
 {
@@ -48,10 +48,33 @@ class PhoreLoggerFactory
                 default:
                     throw new \InvalidArgumentException("Unknown logger scheme '{$parsedDriverUri->scheme}'");
             }
-            $curDriver->setSeverity($severity);
+            $curDriver->setMinSeverity(self::severityToLogLevel($severity));
             $instance->addDriver($curDriver);
         }
         return $instance;
+    }
+
+    private static function severityToLogLevel($severity) : LogLevelEnum
+    {
+        if ($severity instanceof LogLevelEnum)
+            return $severity;
+        if (is_numeric($severity)) {
+            $levels = [
+                LogLevelEnum::EMERGENCY,
+                LogLevelEnum::ALERT,
+                LogLevelEnum::CRITICAL,
+                LogLevelEnum::ERROR,
+                LogLevelEnum::WARNING,
+                LogLevelEnum::NOTICE,
+                LogLevelEnum::INFO,
+                LogLevelEnum::DEBUG
+            ];
+            if (isset($levels[(int)$severity]) && (string)(int)$severity === (string)$severity)
+                return $levels[(int)$severity];
+        } elseif (is_string($severity) && ($level = LogLevelEnum::tryFrom(strtolower($severity))) !== null) {
+            return $level;
+        }
+        throw new \InvalidArgumentException("Invalid severity '$severity'. Expected 0-7 or a log level name.");
     }
 
 }

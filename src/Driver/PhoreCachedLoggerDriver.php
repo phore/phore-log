@@ -11,6 +11,7 @@ namespace Phore\Log\Driver;
 
 use Phore\Log\Format\PhoreDefaultLogFormat;
 use Phore\Log\Format\PhoreLogFormat;
+use Phore\Log\LogLevelEnum;
 use Phore\Log\PhoreLogger;
 use Phore\Log\PhoreStopWatch;
 
@@ -23,21 +24,25 @@ class PhoreCachedLoggerDriver implements PhoreLoggerDriver
 
     private $logFormat;
 
+    private $minSeverity = 7;
+
     public function __construct()
     {
         $this->logFormat = new PhoreDefaultLogFormat();
     }
 
 
-    public function log (int $logLevel, string $file, int $lineNo, ...$params)
+    public function log (LogLevelEnum $logLevel, string $file, int $lineNo, $message, $context = [])
     {
+        if (phore_loglevel_to_int($logLevel) > $this->minSeverity)
+            return;
 
         if ($this->lastFile !== $file) {
             $this->lastFile = $file;
         }
 
 
-        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, ...$params);
+        $logLine = $this->logFormat->format($logLevel, $file, $lineNo, $message, $context);
         $this->logs[] = $logLine;
     }
 
@@ -59,9 +64,9 @@ class PhoreCachedLoggerDriver implements PhoreLoggerDriver
         return $out;
     }
 
-    public function setSeverity(int $severity)
+    public function setMinSeverity(LogLevelEnum $logLevel)
     {
-        // TODO: Implement setSeverity() method.
+        $this->minSeverity = phore_loglevel_to_int($logLevel);
     }
 
     public function setFormatter(PhoreLogFormat $logFormat)
