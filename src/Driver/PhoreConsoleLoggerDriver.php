@@ -62,7 +62,7 @@ final class PhoreConsoleLoggerDriver implements PhoreLoggerDriver
         } else {
             $label .= ' ... pending';
         }
-        $line = $this->colorsEnabled ? "\\033[" . $color . "m" . $label . "\\033[0m" : $label;
+        $line = $this->colorsEnabled ? "\033[" . $color . "m" . $label . "\033[0m" : $label;
         if ($this->interactive) {
             fwrite($this->stream, $line . PHP_EOL);
             $last = $event === 'failure' ? $details : array_slice($details, -1);
@@ -89,7 +89,7 @@ final class PhoreConsoleLoggerDriver implements PhoreLoggerDriver
         if (!$this->interactive || $this->activeLines === 0) {
             return;
         }
-        fwrite($this->stream, str_repeat("\\033[1A\\r\\033[2K", $this->activeLines));
+        fwrite($this->stream, str_repeat("\033[1A\r\033[2K", $this->activeLines));
         $this->activeLines = 0;
     }
 
