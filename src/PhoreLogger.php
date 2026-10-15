@@ -100,6 +100,9 @@ class PhoreLogger extends AbstractLogger
 
     public function start(string $message, array $context = []): LogTask
     {
+        foreach ($context as $value) {
+            $message = str_replace('{}', (string) $value, $message);
+        }
         return new LogTask($this, $message);
     }
 
