@@ -98,6 +98,11 @@ class PhoreLogger extends AbstractLogger
         $this->emit(LogLevelEnum::coerce($level), LogTypeEnum::MESSAGE, $message, $context);
     }
 
+    public function start(string $message, array $context = []): LogTask
+    {
+        return new LogTask($this, $message);
+    }
+
     public function success($message, array $context = []): void
     {
         $this->emit(LogLevelEnum::INFO, LogTypeEnum::SUCCESS, $message, $context);
