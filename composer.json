@@ -10,7 +10,7 @@
   "repositories": [],
   "require": {
     "php": ">=8.5",
-    "psr/log": "^1.1.4",
+    "psr/log": "^3.0.2",
     "phore/core": "*"
   },
   "autoload": {
